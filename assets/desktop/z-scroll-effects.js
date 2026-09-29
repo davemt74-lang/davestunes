@@ -66,27 +66,24 @@
     weight: 18,
     render: (data, ctx) => {
       const scene = el('div', 'z-scroll-now');
-      const player = window.DaveTunesPlayer;
-      const current = player?.state?.current || null;
+      const player = ctx.playerSnapshot || null;
+      const current = player?.current || null;
       const vinyl = el('div', 'z-scroll-vinyl');
       const label = el('div', 'z-scroll-vinyl-label', current?.title?.slice(0, 1).toUpperCase() || '♪');
       vinyl.append(label);
       const copy = el('div', 'z-scroll-scene-copy');
       copy.append(el('span', 'z-scroll-eyebrow', 'Now Playing'));
       copy.append(el('h1', '', current?.title || 'Your music, in motion.'));
-      copy.append(el('p', '', current?.artist_name || 'Start a track, then hold Z and scroll through your library.'));
+      copy.append(el('p', '', current?.artistName || 'Start a track, then hold Z and scroll through your library.'));
       if (current) {
         const controls = el('div', 'z-scroll-actions');
         const previous = el('button', 'z-scroll-action', 'Previous');
-        const toggle = el('button', 'z-scroll-action primary', player?.audio?.paused ? 'Play' : 'Pause');
+        const toggle = el('button', 'z-scroll-action primary', player?.isPlaying ? 'Pause' : 'Play');
         const next = el('button', 'z-scroll-action', 'Next');
         previous.type = toggle.type = next.type = 'button';
         previous.addEventListener('click', () => ctx.runCommand('player.previous').catch(error => ctx.emit('zscroll-error',{error})));
         toggle.addEventListener('click', () => {
-          const p = window.DaveTunesPlayer;
-          if (!p) return;
-          const task = p.audio.paused ? p.play() : Promise.resolve(p.pause());
-          Promise.resolve(task).catch(error => ctx.emit('zscroll-error',{error}));
+          ctx.runCommand('player.toggle').catch(error => ctx.emit('zscroll-error',{error}));
         });
         next.addEventListener('click', () => ctx.runCommand('player.next').catch(error => ctx.emit('zscroll-error',{error})));
         controls.append(previous,toggle,next);
