@@ -27,7 +27,7 @@ dt_page_header('Dashboard');
       <?php if(!$artists):?><p class="muted">Create an artist identity to begin publishing music.</p><?php endif;?>
       <div class="stack">
       <?php foreach($artists as $artist):?>
-        <div class="artist-card"><h3><?=dt_e($artist['name'])?></h3><span class="pill"><?=dt_e($artist['artist_role'])?></span> <span class="pill">@<?=dt_e($artist['slug'])?></span></div>
+        <div class="artist-card"><h3><?=dt_e($artist['name'])?></h3><span class="pill"><?=dt_e($artist['artist_role'])?></span> <span class="pill">@<?=dt_e($artist['slug'])?></span><p><a href="/catalog.php?artist=<?=(int)$artist['id']?>">Open catalog →</a></p></div>
       <?php endforeach;?>
       </div>
     </article>
