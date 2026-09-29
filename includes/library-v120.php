@@ -84,6 +84,7 @@ function dt_entitlement_grant(PDO $pdo,array $grant): array
     if(!in_array($resourceType,dt_entitlement_resource_types(),true)||!dt_entitlement_resource_exists($pdo,$resourceType,$resourceId))throw new RuntimeException('Entitlement resource was not found.');
     if(!in_array($entitlementType,dt_entitlement_types(),true))throw new RuntimeException('Entitlement type is invalid.');
     if(!in_array($sourceType,dt_entitlement_source_types(),true))throw new RuntimeException('Entitlement source is invalid.');
+    if(in_array($sourceType,['purchase','gift','promotion','subscription'],true)&&$sourceRef==='')throw new RuntimeException('Entitlement source reference is required.');
     if($grantor>0&&!dt_library_user_exists($pdo,$grantor))throw new RuntimeException('Entitlement grantor must have an active account.');
 
     $starts=dt_entitlement_datetime($grant['starts_at']??null);
@@ -92,8 +93,12 @@ function dt_entitlement_grant(PDO $pdo,array $grant): array
 
     $existing=dt_entitlement_by_grant_key($pdo,$grantKey);
     if($existing){
-        foreach(['user_id'=>$userId,'resource_type'=>$resourceType,'resource_id'=>$resourceId,'entitlement_type'=>$entitlementType,'source_type'=>$sourceType] as $field=>$expected){
-            if((string)$existing[$field]!== (string)$expected)throw new RuntimeException('Entitlement idempotency key conflicts with an existing grant.');
+        foreach([
+            'user_id'=>$userId,'resource_type'=>$resourceType,'resource_id'=>$resourceId,
+            'entitlement_type'=>$entitlementType,'source_type'=>$sourceType,'source_ref'=>$sourceRef,
+            'starts_at'=>$starts,'ends_at'=>$ends,
+        ] as $field=>$expected){
+            if((string)($existing[$field]??'')!==(string)($expected??''))throw new RuntimeException('Entitlement idempotency key conflicts with an existing grant.');
         }
         return $existing;
     }
@@ -108,8 +113,12 @@ function dt_entitlement_grant(PDO $pdo,array $grant): array
         if((string)$e->getCode()!=='23000')throw $e;
         $existing=dt_entitlement_by_grant_key($pdo,$grantKey);
         if(!$existing)throw $e;
-        foreach(['user_id'=>$userId,'resource_type'=>$resourceType,'resource_id'=>$resourceId,'entitlement_type'=>$entitlementType,'source_type'=>$sourceType] as $field=>$expected){
-            if((string)$existing[$field]!== (string)$expected)throw new RuntimeException('Entitlement idempotency key conflicts with an existing grant.');
+        foreach([
+            'user_id'=>$userId,'resource_type'=>$resourceType,'resource_id'=>$resourceId,
+            'entitlement_type'=>$entitlementType,'source_type'=>$sourceType,'source_ref'=>$sourceRef,
+            'starts_at'=>$starts,'ends_at'=>$ends,
+        ] as $field=>$expected){
+            if((string)($existing[$field]??'')!==(string)($expected??''))throw new RuntimeException('Entitlement idempotency key conflicts with an existing grant.');
         }
         return $existing;
     }
@@ -351,6 +360,12 @@ function dt_library_add_to_crate(PDO $pdo,int $userId,int $crateId,string $resou
     $pdo->prepare('INSERT IGNORE INTO music_crate_items_v120 (crate_id,resource_type,resource_id,sort_order) VALUES (?,?,?,?)')->execute([$crateId,$resourceType,$resourceId,$sort]);
 }
 
+function dt_library_remove_from_crate(PDO $pdo,int $userId,int $crateId,string $resourceType,int $resourceId): void
+{
+    if(!dt_library_crate($pdo,$userId,$crateId))throw new RuntimeException('Crate was not found.');
+    $pdo->prepare('DELETE FROM music_crate_items_v120 WHERE crate_id=? AND resource_type=? AND resource_id=?')->execute([$crateId,$resourceType,$resourceId]);
+}
+
 function dt_library_create_playlist(PDO $pdo,int $userId,string $name,string $description=''): array
 {
     if(!dt_library_user_exists($pdo,$userId))throw new RuntimeException('User was not found.');
@@ -380,4 +395,10 @@ function dt_library_add_to_playlist(PDO $pdo,int $userId,int $playlistId,int $re
     $stmt->execute([$playlistId]);
     $sort=(int)$stmt->fetchColumn();
     $pdo->prepare('INSERT IGNORE INTO music_playlist_recordings_v120 (playlist_id,recording_id,sort_order) VALUES (?,?,?)')->execute([$playlistId,$recordingId,$sort]);
+}
+
+function dt_library_remove_from_playlist(PDO $pdo,int $userId,int $playlistId,int $recordingId): void
+{
+    if(!dt_library_playlist($pdo,$userId,$playlistId))throw new RuntimeException('Playlist was not found.');
+    $pdo->prepare('DELETE FROM music_playlist_recordings_v120 WHERE playlist_id=? AND recording_id=?')->execute([$playlistId,$recordingId]);
 }
