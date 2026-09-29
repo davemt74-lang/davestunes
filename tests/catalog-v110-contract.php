@@ -35,6 +35,7 @@ catalog_has($catalog,'dt_catalog_create_release','Release creation service is mi
 catalog_has($catalog,'dt_catalog_add_recording_to_release','Release-track composition is missing.');
 catalog_has($catalog,'Release and recording must belong to the same artist.','Cross-artist release composition guard is missing.');
 catalog_has($catalog,'dt_catalog_create_edition','Edition model is missing.');
+catalog_has($catalog,'dt_catalog_remove_release_track','Release composition must support governed corrections.');
 catalog_has($catalog,'dt_catalog_publish_release','Publishing gate is missing.');
 catalog_has($catalog,'at least one active recording','Empty release publish guard is missing.');
 catalog_has($catalog,'music_catalog_events_v110','Catalog mutations must be auditable.');
@@ -45,6 +46,7 @@ catalog_has($bootstrap,"require_once __DIR__.'/music-catalog-schema-v110.php';",
 catalog_has($bootstrap,"require_once __DIR__.'/music-catalog-v110.php';",'Catalog service must load in bootstrap.');
 catalog_has($migrate,'dt_catalog_ensure_schema($pdo);','Migration must install the catalog after foundation.');
 catalog_has($page,'dt_catalog_add_recording_to_release','Catalog UI must exercise canonical release composition.');
+catalog_has($page,"value=\"remove_track\"",'Catalog UI must allow governed release-track corrections.');
 catalog_has($dashboard,'/catalog.php?artist=','Artist dashboard must link to the catalog.');
 catalog_has($workflow,'php tests/catalog-v110-contract.php','CI must run the catalog contract.');
 catalog_has($workflow,'php tests/catalog-v110-mysql.php','CI must run the catalog MySQL integration.');
