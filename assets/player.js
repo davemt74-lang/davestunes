@@ -16,12 +16,16 @@
 
   const sessionKey = (() => {
     const storageKey = 'davestunes.player.session';
-    let value = localStorage.getItem(storageKey);
-    if (!value) {
-      value = 'browser:' + uuidv4();
-      localStorage.setItem(storageKey, value);
+    try {
+      let value = localStorage.getItem(storageKey);
+      if (!value) {
+        value = 'browser:' + uuidv4();
+        localStorage.setItem(storageKey, value);
+      }
+      return value;
+    } catch (_) {
+      return 'browser:' + uuidv4();
     }
-    return value;
   })();
 
   const state = {
@@ -67,7 +71,7 @@
     state.queue = json.queue || [];
     state.queueRevision = Number(json.session?.queue_revision || 0);
     state.volume = Math.max(0, Math.min(1, Number(json.session?.volume ?? 1)));
-    state.current = json.current || null;
+    state.current = json.current?.stream_url ? json.current : null;
     audio.volume = state.volume;
 
     if (state.current?.stream_url) {
