@@ -6,7 +6,7 @@ $catalog=file_get_contents($root.'/catalog.php');
 $studio=file_get_contents($root.'/experience-studio.php');
 $album=file_get_contents($root.'/album.php');
 $experience=file_get_contents($root.'/album-experience.php');
-$boot=file_get_contents($root.'/assets/album-experience.js');
+$boot=file_get_contents($root.'/assets/public-experience.js');
 $service=file_get_contents($root.'/includes/experience-v280.php');
 $workflow=file_get_contents($root.'/.github/workflows/foundation-v1.yml');
 
@@ -30,6 +30,7 @@ if(!str_contains($album,"release_status']!=='published'&&!\$canEdit"))throw new 
 if(!str_contains($experience,"release_status']!=='published'"))throw new RuntimeException('Published album experience surface must reject unpublished releases.');
 if(!str_contains($experience,'dt_experience_active'))throw new RuntimeException('Album experience must use the canonical active experience.');
 if(!str_contains($experience,'module-z-scroll.js'))throw new RuntimeException('Album experience must use canonical Z-Scroll.');
+if(!str_contains($experience,'public-experience.js'))throw new RuntimeException('Album experience must use the shared public bootstrap.');
 if(!str_contains($experience,'module-experience-runtime.js'))throw new RuntimeException('Album experience must use canonical experience runtime.');
 if(!str_contains($experience,'experience-effects.js'))throw new RuntimeException('Album experience must use canonical effects library.');
 if(str_contains($experience,'new Audio(')||str_contains($boot,'new Audio('))throw new RuntimeException('Album experience must not create a second playback engine.');
