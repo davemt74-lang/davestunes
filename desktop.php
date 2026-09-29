@@ -12,6 +12,7 @@ $boot=[
     ],
     'capabilities'=>[
         'player'=>true,
+        'dataAdapter'=>true,
         'objects'=>false,
         'turntable'=>false,
         'zScroll'=>false,
@@ -46,20 +47,20 @@ if($bootJson===false)$bootJson='{}';
       <div class="library-surface" data-desktop-mount="library">
         <header class="library-surface-header">
           <div class="library-surface-title">Your Library</div>
-          <input class="library-search" type="search" placeholder="Search artists, albums, songs…" aria-label="Search music">
+          <input class="library-search" data-library-search type="search" placeholder="Search artists, albums, songs…" aria-label="Search music" autocomplete="off">
           <button class="desktop-chip" type="button" disabled>View</button>
         </header>
         <nav class="library-tabs" aria-label="Library sections">
-          <button class="library-tab" aria-selected="true" type="button">Home</button>
-          <button class="library-tab" aria-selected="false" type="button">Albums</button>
-          <button class="library-tab" aria-selected="false" type="button">Artists</button>
-          <button class="library-tab" aria-selected="false" type="button">Songs</button>
-          <button class="library-tab" aria-selected="false" type="button">Crates</button>
-          <button class="library-tab" aria-selected="false" type="button">Playlists</button>
+          <button class="library-tab" data-library-view="home" aria-selected="true" type="button">Home</button>
+          <button class="library-tab" data-library-view="albums" aria-selected="false" type="button">Albums</button>
+          <button class="library-tab" data-library-view="artists" aria-selected="false" type="button">Artists</button>
+          <button class="library-tab" data-library-view="songs" aria-selected="false" type="button">Songs</button>
+          <button class="library-tab" data-library-view="crates" aria-selected="false" type="button">Crates</button>
+          <button class="library-tab" data-library-view="playlists" aria-selected="false" type="button">Playlists</button>
         </nav>
         <div class="library-canvas" data-desktop-mount="library-content">
           <div class="library-empty">
-            <div><strong>Desktop shell is ready.</strong>The canonical library adapter plugs into this surface in Section 2.</div>
+            <div><strong>Loading your library…</strong>Your canonical albums, artists, songs, crates, and playlists will appear here.</div>
           </div>
         </div>
       </div>
@@ -92,5 +93,6 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/desktop-core.js"></script>
   <script src="/assets/desktop/template-midnight.js"></script>
   <script src="/assets/desktop/module-player-bridge.js"></script>
+  <script src="/assets/desktop/module-library-adapter.js"></script>
 </body>
 </html>
