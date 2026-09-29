@@ -70,6 +70,27 @@
     return card;
   };
 
+  const renderNewsItem=item=>{
+    const card=el('article','featured-card featured-news-card');
+    const art=el('div','featured-card-art');
+    if(item.image_url){
+      const image=document.createElement('img'); image.src=item.image_url; image.alt=''; image.loading='lazy'; art.append(image);
+    }else art.append(el('span','','N'));
+    const copy=el('div','featured-card-copy');
+    copy.append(el('span','','News & Notes'),el('strong','',item.headline||'Update'));
+    if(item.body_text)copy.append(el('p','',item.body_text));
+    const actions=el('div','featured-card-actions');
+    const open=el('button','primary',item.link_label||'Read');
+    open.type='button';
+    open.addEventListener('click',()=>{
+      const target=item.link_url||('/news.php?slug='+encodeURIComponent(item.slug||''));
+      window.location.assign(target);
+    });
+    actions.append(open);
+    card.append(art,copy,actions);
+    return card;
+  };
+
   const load=async ctx=>{
     const mount=document.querySelector('[data-desktop-featured]');
     if(!mount)return [];
@@ -77,9 +98,10 @@
     const json=await response.json();
     if(!response.ok||!json.ok)throw new Error(json.error||'Featured content could not be loaded.');
     const items=Array.isArray(json.items)?json.items:[];
+    const news=Array.isArray(json.news)?json.news:[];
     mount.replaceChildren();
-    mount.hidden=!items.length;
-    if(!items.length)return [];
+    mount.hidden=!items.length&&!news.length;
+    if(!items.length&&!news.length)return {items:[],news:[]};
 
     const shell=el('div','featured-desktop-shell');
     const heading=el('div','featured-desktop-heading');
@@ -91,9 +113,16 @@
     const rail=el('div','featured-desktop-rail');
     for(const item of items)rail.append(renderItem(item,ctx));
     shell.append(heading,rail);
+    if(news.length){
+      const newsHeading=el('div','featured-desktop-heading featured-news-heading');
+      newsHeading.append(el('strong','','News & Notes'),el('span','','From Dave\'s Tunes'));
+      const newsRail=el('div','featured-desktop-rail featured-news-rail');
+      for(const item of news)newsRail.append(renderNewsItem(item));
+      shell.append(newsHeading,newsRail);
+    }
     mount.append(shell);
-    ctx.emit('featured-loaded',{items});
-    return items;
+    ctx.emit('featured-loaded',{items,news});
+    return {items,news};
   };
 
   desktop.registerCommand({id:'featured.refresh',run:async(_payload,ctx)=>load(ctx)});
