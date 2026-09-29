@@ -170,7 +170,7 @@
         emit('player-event',{name:event.type,detail:event.detail});
         publish(reason);
       };
-      const names=['ready','restore','trackchange','play','pause','time','seek','queuechange','ended','error'];
+      const names=['ready','restore','trackchange','play','pause','time','seek','volume','queuechange','ended','error'];
       names.forEach(name=>document.addEventListener('davestunes:player:'+name,relay));
       publish('bridge-mounted');
       return()=>names.forEach(name=>document.removeEventListener('davestunes:player:'+name,relay));
