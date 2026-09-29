@@ -4,6 +4,7 @@
   const listeners = new Map();
   const audio = new Audio();
   audio.preload = 'metadata';
+  let persistTimer = 0;
 
   const uuidv4 = () => {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -36,6 +37,7 @@
     playToken: null,
     lastHeartbeatAt: 0,
     volume: 1,
+    source: { type: '', id: null },
     ready: false,
   };
 
@@ -72,6 +74,10 @@
     state.queueRevision = Number(json.session?.queue_revision || 0);
     state.volume = Math.max(0, Math.min(1, Number(json.session?.volume ?? 1)));
     state.current = json.current?.stream_url ? json.current : null;
+    state.source = {
+      type: String(json.session?.last_source_type || ''),
+      id: json.session?.last_source_id == null ? null : Number(json.session.last_source_id)
+    };
     audio.volume = state.volume;
 
     if (state.current?.stream_url) {
@@ -98,6 +104,39 @@
       });
       state.volume = Number(result.session?.volume ?? state.volume);
     } catch (error) { emit('error', { error }); }
+  };
+
+  const schedulePersist = (delay = 260) => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = window.setTimeout(() => {
+      persistTimer = 0;
+      persistState(audio.paused ? 'paused' : 'playing');
+    }, delay);
+  };
+
+  const flushPersist = () => {
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = 0;
+    }
+    return persistState(audio.paused ? 'paused' : 'playing');
+  };
+
+  const seek = seconds => {
+    if (!state.current) return;
+    const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null;
+    const next = Math.max(0, Number(seconds) || 0);
+    audio.currentTime = duration === null ? next : Math.min(duration, next);
+    render();
+    emit('seek', { currentTime: audio.currentTime, duration: audio.duration });
+    schedulePersist();
+  };
+
+  const setVolume = volume => {
+    state.volume = Math.max(0, Math.min(1, Number(volume) || 0));
+    audio.volume = state.volume;
+    emit('volume', { volume: state.volume });
+    schedulePersist();
   };
 
   const heartbeat = async (completed = false) => {
@@ -144,6 +183,12 @@
     });
     if (!begun.current?.stream_url) throw new Error('No playable media is available.');
     state.current = begun.current;
+    if (options.sourceType && options.sourceType !== 'resume') {
+      state.source = {
+        type: String(options.sourceType),
+        id: options.sourceId == null ? null : Number(options.sourceId)
+      };
+    }
     state.playToken = playToken;
     state.lastHeartbeatAt = Date.now();
     return begun.current;
@@ -188,6 +233,10 @@
     });
     state.queue = result.queue || [];
     state.queueRevision = Number(result.session?.queue_revision || state.queueRevision + 1);
+    state.source = {
+      type: String(options.sourceType || ''),
+      id: options.sourceId == null ? null : Number(options.sourceId)
+    };
     emit('queuechange', { queue: state.queue, revision: state.queueRevision });
     return state.queue;
   };
@@ -214,7 +263,7 @@
   };
 
   audio.addEventListener('play', () => { render(); emit('play', { current: state.current }); });
-  audio.addEventListener('pause', () => { render(); persistState('paused'); emit('pause', { current: state.current }); });
+  audio.addEventListener('pause', () => { render(); flushPersist(); emit('pause', { current: state.current }); });
   audio.addEventListener('timeupdate', () => { render(); emit('time', { currentTime: audio.currentTime, duration: audio.duration }); });
   audio.addEventListener('ended', async () => {
     await heartbeat(true);
@@ -253,8 +302,7 @@
   document.addEventListener('input', event => {
     const progress = event.target.closest('[data-player-progress]');
     if (progress && Number.isFinite(audio.duration)) {
-      audio.currentTime = Number(progress.value || 0);
-      emit('seek', { currentTime: audio.currentTime });
+      seek(Number(progress.value || 0));
     }
   });
 
@@ -267,21 +315,18 @@
     previous,
     play: resume,
     pause: () => audio.pause(),
-    seek: seconds => {
-      audio.currentTime = Math.max(0, Number(seconds) || 0);
-      persistState(audio.paused ? 'paused' : 'playing');
-    },
-    setVolume: volume => {
-      state.volume = Math.max(0, Math.min(1, Number(volume) || 0));
-      audio.volume = state.volume;
-      persistState(audio.paused ? 'paused' : 'playing');
-    },
+    seek,
+    setVolume,
     on: (name, fn) => {
       const bucket = listeners.get(name) || [];
       bucket.push(fn);
       listeners.set(name, bucket);
       return () => listeners.set(name, bucket.filter(item => item !== fn));
     },
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (state.current) flushPersist();
   });
 
   loadSession()

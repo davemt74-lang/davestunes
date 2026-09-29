@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section6',
+    'version'=>'music-desktop-v1-section7',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -15,6 +15,7 @@ $boot=[
         'dataAdapter'=>true,
         'objects'=>true,
         'turntable'=>true,
+        'unifiedPlayer'=>true,
         'zScroll'=>true,
         'flowBuilder'=>false,
     ],

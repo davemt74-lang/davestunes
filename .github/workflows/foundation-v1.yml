@@ -84,6 +84,9 @@ jobs:
       - name: Music Desktop V1 Section 6 turntable contract
         run: node tests/desktop-v250-contract.mjs
 
+      - name: Music Desktop V1 Section 7 unified player contract
+        run: node tests/desktop-v260-contract.mjs
+
       - name: Foundation MySQL integration
         env:
           DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
