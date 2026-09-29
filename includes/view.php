@@ -35,7 +35,7 @@ function dt_player_dock(): void
 
 function dt_page_footer(): void
 {
-    echo '<footer>Dave\'s Tunes · Music belongs in a place that feels alive.</footer>';
+    echo '<footer>Dave\'s Tunes · '.dt_e(dt_release_label()).' · Music belongs in a place that feels alive.</footer>';
     dt_player_dock();
     echo '</body></html>';
 }
