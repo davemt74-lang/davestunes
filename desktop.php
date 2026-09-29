@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section8',
+    'version'=>'music-desktop-v1-section9',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -17,6 +17,7 @@ $boot=[
         'turntable'=>true,
         'unifiedPlayer'=>true,
         'featuredContent'=>true,
+        'experienceGraph'=>true,
         'zScroll'=>true,
         'flowBuilder'=>false,
     ],
@@ -128,6 +129,7 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/module-media-objects.js"></script>
   <script src="/assets/desktop/module-turntable.js"></script>
   <script src="/assets/desktop/z-scroll-effects.js"></script>
+  <script src="/assets/desktop/module-experience-runtime.js"></script>
   <script src="/assets/desktop/module-z-scroll.js"></script>
 </body>
 </html>
