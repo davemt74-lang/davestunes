@@ -96,7 +96,7 @@ function dt_entitlement_grant(PDO $pdo,array $grant): array
         foreach([
             'user_id'=>$userId,'resource_type'=>$resourceType,'resource_id'=>$resourceId,
             'entitlement_type'=>$entitlementType,'source_type'=>$sourceType,'source_ref'=>$sourceRef,
-            'starts_at'=>$starts,'ends_at'=>$ends,
+            'starts_at'=>$starts,'ends_at'=>$ends,'granted_by_user_id'=>$grantor?:null,
         ] as $field=>$expected){
             if((string)($existing[$field]??'')!==(string)($expected??''))throw new RuntimeException('Entitlement idempotency key conflicts with an existing grant.');
         }
@@ -116,7 +116,7 @@ function dt_entitlement_grant(PDO $pdo,array $grant): array
         foreach([
             'user_id'=>$userId,'resource_type'=>$resourceType,'resource_id'=>$resourceId,
             'entitlement_type'=>$entitlementType,'source_type'=>$sourceType,'source_ref'=>$sourceRef,
-            'starts_at'=>$starts,'ends_at'=>$ends,
+            'starts_at'=>$starts,'ends_at'=>$ends,'granted_by_user_id'=>$grantor?:null,
         ] as $field=>$expected){
             if((string)($existing[$field]??'')!==(string)($expected??''))throw new RuntimeException('Entitlement idempotency key conflicts with an existing grant.');
         }
@@ -129,6 +129,11 @@ function dt_entitlement_grant(PDO $pdo,array $grant): array
     return dt_entitlement_by_grant_key($pdo,$grantKey)??throw new RuntimeException('Entitlement could not be loaded.');
 }
 
+/**
+ * Internal revocation primitive. Commerce/refund, gift, subscription and
+ * governed admin services are responsible for authorizing the caller before
+ * invoking this function. There is intentionally no self-service web route.
+ */
 function dt_entitlement_revoke(PDO $pdo,int $entitlementId,?int $actorUserId=null,string $reason=''): void
 {
     if($entitlementId<1)throw new RuntimeException('Entitlement was not found.');
@@ -228,6 +233,11 @@ function dt_library_save_recording(PDO $pdo,int $userId,int $recordingId): void
     if(!dt_library_user_exists($pdo,$userId))throw new RuntimeException('User was not found.');
     if(!dt_library_recording_is_public($pdo,$recordingId)&&!dt_entitlement_user_has_recording($pdo,$userId,$recordingId))throw new RuntimeException('Recording is not available to save.');
     $pdo->prepare('INSERT IGNORE INTO user_saved_recordings_v120 (user_id,recording_id) VALUES (?,?)')->execute([$userId,$recordingId]);
+}
+
+function dt_library_unsave_recording(PDO $pdo,int $userId,int $recordingId): void
+{
+    $pdo->prepare('DELETE FROM user_saved_recordings_v120 WHERE user_id=? AND recording_id=?')->execute([$userId,$recordingId]);
 }
 
 function dt_library_follow_artist(PDO $pdo,int $userId,int $artistId): void
