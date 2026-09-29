@@ -55,6 +55,7 @@ jobs:
           node --check assets/desktop/z-scroll-effects.js
           node --check assets/desktop/module-z-scroll.js
           node --check assets/desktop/module-media-objects.js
+          node --check assets/desktop/module-turntable.js
 
       - name: Foundation architecture contract
         run: php tests/foundation-v1-contract.php
@@ -79,6 +80,9 @@ jobs:
 
       - name: Music Desktop V1 Section 5 media object contract
         run: node tests/desktop-v240-contract.mjs
+
+      - name: Music Desktop V1 Section 6 turntable contract
+        run: node tests/desktop-v250-contract.mjs
 
       - name: Foundation MySQL integration
         env:

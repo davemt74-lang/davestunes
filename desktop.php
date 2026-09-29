@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section5',
+    'version'=>'music-desktop-v1-section6',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -14,7 +14,7 @@ $boot=[
         'player'=>true,
         'dataAdapter'=>true,
         'objects'=>true,
-        'turntable'=>false,
+        'turntable'=>true,
         'zScroll'=>true,
         'flowBuilder'=>false,
     ],
@@ -70,11 +70,26 @@ if($bootJson===false)$bootJson='{}';
 
     <section class="desktop-layer desktop-layer-objects" data-desktop-layer="objects" aria-label="Spatial object layer"></section>
 
-    <section class="desktop-layer desktop-layer-turntable" data-desktop-layer="turntable" aria-label="Turntable layer">
-      <div class="turntable-mount" aria-hidden="true">
-        <div class="turntable-platter"></div>
-        <div class="turntable-arm"></div>
-        <div class="turntable-caption">Digital turntable mount</div>
+    <section class="desktop-layer desktop-layer-turntable" data-desktop-layer="turntable" aria-label="Digital vinyl turntable">
+      <div class="turntable-mount" data-turntable data-turntable-playing="false" data-turntable-loaded="false" data-turntable-drop="idle">
+        <div class="turntable-platter" data-turntable-platter>
+          <div class="turntable-record-label" data-turntable-label><span>♪</span></div>
+        </div>
+        <div class="turntable-spindle" aria-hidden="true"></div>
+        <div class="turntable-arm-base" aria-hidden="true"></div>
+        <div class="turntable-arm" data-turntable-arm aria-hidden="true"><span class="turntable-cartridge"></span></div>
+        <div class="turntable-meta">
+          <span class="turntable-caption">Now spinning</span>
+          <strong data-turntable-title>No record loaded</strong>
+          <span data-turntable-artist>Drop an album here or choose a track.</span>
+        </div>
+        <div class="turntable-controls" data-object-interactive="true">
+          <button type="button" data-turntable-action="previous" aria-label="Previous track">‹</button>
+          <button type="button" class="turntable-play" data-turntable-action="toggle" aria-label="Play or pause">●</button>
+          <button type="button" data-turntable-action="next" aria-label="Next track">›</button>
+        </div>
+        <input class="turntable-progress" data-turntable-progress data-object-interactive="true" type="range" min="0" max="1000" value="0" aria-label="Turntable playback position">
+        <div class="turntable-drop-hint" data-turntable-drop-hint aria-hidden="true">Drop album to play</div>
       </div>
     </section>
 
@@ -106,6 +121,7 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/module-library-adapter.js"></script>
   <script src="/assets/desktop/module-object-runtime.js"></script>
   <script src="/assets/desktop/module-media-objects.js"></script>
+  <script src="/assets/desktop/module-turntable.js"></script>
   <script src="/assets/desktop/z-scroll-effects.js"></script>
   <script src="/assets/desktop/module-z-scroll.js"></script>
 </body>

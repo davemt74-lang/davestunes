@@ -163,7 +163,12 @@
     const object = objects.get(drag.id);
     if (!object) return;
     try {
-      await saveUpdate(object, { x: object.transform.x, y: object.transform.y });
+      const updated=await saveUpdate(object,{x:object.transform.x,y:object.transform.y});
+      desktop.emit('object-dropped',{
+        object:updated,
+        clientX:event.clientX,
+        clientY:event.clientY
+      });
     } catch (_) {}
   };
 
