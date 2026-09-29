@@ -214,6 +214,18 @@ function dt_featured_public_news(PDO $pdo,int $limit=5): array
 {
     $limit=max(1,min(10,$limit));
     $items=[];
+    foreach(dt_news_active($pdo,'public-desktop',$limit) as $row){
+        $items[]=[
+            'headline'=>(string)$row['headline'],
+            'body'=>(string)$row['body_text'],
+            'url'=>(string)$row['link_url']!==''?(string)$row['link_url']:'/news.php?slug='.rawurlencode((string)$row['slug']),
+            'imageUrl'=>(string)$row['image_url'],
+            'linkLabel'=>(string)$row['link_label'],
+            'publishedAt'=>$row['published_at'],
+            'source'=>'news',
+        ];
+    }
+    if($items)return $items;
     foreach(dt_featured_active_rows($pdo,$limit) as $row){
         $headline=trim((string)$row['headline']);
         $body=trim((string)$row['body_text']);
@@ -233,4 +245,140 @@ function dt_featured_public_news(PDO $pdo,int $limit=5): array
         ];
     }
     return $items;
+}
+
+
+function dt_news_slug(string $value): string
+{
+    $slug=dt_catalog_slug($value);
+    return $slug!==''?$slug:'news';
+}
+
+function dt_news_unique_slug(PDO $pdo,string $headline,?int $excludeId=null): string
+{
+    $base=dt_news_slug($headline);
+    for($n=0;$n<1000;$n++){
+        $slug=$n===0?$base:$base.'-'.($n+1);
+        $sql='SELECT 1 FROM news_posts_v110 WHERE slug=?'.($excludeId?' AND id<>?':'').' LIMIT 1';
+        $stmt=$pdo->prepare($sql);
+        $params=[$slug];
+        if($excludeId)$params[]=$excludeId;
+        $stmt->execute($params);
+        if(!$stmt->fetchColumn())return $slug;
+    }
+    throw new RuntimeException('A unique news slug could not be generated.');
+}
+
+function dt_news_url(string $value,bool $allowEmpty=true): string
+{
+    $value=trim($value);
+    if($value==='')return $allowEmpty?'':throw new RuntimeException('URL is required.');
+    if(str_starts_with($value,'/')){
+        if(str_contains($value,'..')||preg_match('/[\r\n]/',$value))throw new RuntimeException('Internal URL is invalid.');
+        return $value;
+    }
+    $parts=parse_url($value);
+    if(!is_array($parts)||!isset($parts['scheme'])||!in_array(strtolower((string)$parts['scheme']),['http','https'],true)){
+        throw new RuntimeException('URL must be an internal path or HTTP(S) URL.');
+    }
+    return $value;
+}
+
+function dt_news_event(PDO $pdo,?int $postId,?int $actorId,string $type,array $metadata=[]): void
+{
+    $json=json_encode($metadata,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+    if($json===false)$json='{}';
+    $stmt=$pdo->prepare('INSERT INTO news_post_events_v110 (news_post_id,actor_user_id,event_type,metadata_json) VALUES (?,?,?,?)');
+    $stmt->execute([$postId?:null,$actorId?:null,substr(trim($type),0,80),$json]);
+}
+
+function dt_news_save(PDO $pdo,array $user,array $input,?int $postId=null): int
+{
+    if(!dt_is_admin($user))throw new RuntimeException('Administrator access required.');
+    if(!dt_news_schema_ready($pdo))throw new RuntimeException('News & Notes schema is not installed.');
+
+    $headline=mb_substr(trim((string)($input['headline']??'')),0,190);
+    if($headline==='')throw new RuntimeException('Headline is required.');
+    $body=trim((string)($input['body_text']??''));
+    if($body==='')throw new RuntimeException('Body is required.');
+    if(mb_strlen($body)>12000)throw new RuntimeException('Body must be 12,000 characters or fewer.');
+
+    $image=dt_news_url((string)($input['image_url']??''));
+    $link=dt_news_url((string)($input['link_url']??''));
+    $linkLabel=mb_substr(trim((string)($input['link_label']??'')),0,80);
+    $placement=(string)($input['placement']??'public-desktop');
+    if(!in_array($placement,['public-desktop','signed-in-desktop','both'],true))throw new RuntimeException('News placement is invalid.');
+    $status=(string)($input['post_status']??'draft');
+    if(!in_array($status,['draft','active','expired'],true))throw new RuntimeException('News status is invalid.');
+    $priority=max(-10000,min(10000,(int)($input['priority']??0)));
+
+    $starts=trim((string)($input['starts_at']??''))?:null;
+    $ends=trim((string)($input['ends_at']??''))?:null;
+    if($starts!==null&&strtotime($starts)===false)throw new RuntimeException('Start date is invalid.');
+    if($ends!==null&&strtotime($ends)===false)throw new RuntimeException('End date is invalid.');
+    if($starts&&$ends&&strtotime($ends)<=strtotime($starts))throw new RuntimeException('End date must be after start date.');
+
+    $slug=dt_news_unique_slug($pdo,$headline,$postId);
+    $actorId=(int)$user['id'];
+    if($postId){
+        $stmt=$pdo->prepare("UPDATE news_posts_v110 SET slug=?,headline=?,body_text=?,image_url=?,link_url=?,link_label=?,placement=?,post_status=?,priority=?,starts_at=?,ends_at=?,published_at=CASE WHEN ?='active' AND published_at IS NULL THEN NOW() ELSE published_at END,updated_by_user_id=?,updated_at=NOW() WHERE id=?");
+        $stmt->execute([$slug,$headline,$body,$image,$link,$linkLabel,$placement,$status,$priority,$starts,$ends,$status,$actorId,$postId]);
+        if($stmt->rowCount()===0){
+            $check=$pdo->prepare('SELECT 1 FROM news_posts_v110 WHERE id=? LIMIT 1');
+            $check->execute([$postId]);
+            if(!$check->fetchColumn())throw new RuntimeException('News post was not found.');
+        }
+        dt_news_event($pdo,$postId,$actorId,'news.updated',['status'=>$status,'placement'=>$placement]);
+        return $postId;
+    }
+
+    $stmt=$pdo->prepare("INSERT INTO news_posts_v110
+        (slug,headline,body_text,image_url,link_url,link_label,placement,post_status,priority,starts_at,ends_at,published_at,created_by_user_id,updated_by_user_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,CASE WHEN ?='active' THEN NOW() ELSE NULL END,?,?)");
+    $stmt->execute([$slug,$headline,$body,$image,$link,$linkLabel,$placement,$status,$priority,$starts,$ends,$status,$actorId,$actorId]);
+    $id=(int)$pdo->lastInsertId();
+    dt_news_event($pdo,$id,$actorId,'news.created',['status'=>$status,'placement'=>$placement]);
+    return $id;
+}
+
+function dt_news_delete(PDO $pdo,array $user,int $postId): void
+{
+    if(!dt_is_admin($user))throw new RuntimeException('Administrator access required.');
+    $stmt=$pdo->prepare('SELECT slug,headline FROM news_posts_v110 WHERE id=? LIMIT 1');
+    $stmt->execute([$postId]);
+    $row=$stmt->fetch();
+    if(!$row)throw new RuntimeException('News post was not found.');
+    $pdo->prepare('DELETE FROM news_posts_v110 WHERE id=?')->execute([$postId]);
+    dt_news_event($pdo,null,(int)$user['id'],'news.deleted',['post_id'=>$postId,'slug'=>(string)$row['slug'],'headline'=>(string)$row['headline']]);
+}
+
+function dt_news_admin_rows(PDO $pdo): array
+{
+    if(!dt_news_schema_ready($pdo))return [];
+    return $pdo->query("SELECT * FROM news_posts_v110 ORDER BY priority DESC,updated_at DESC,id DESC")->fetchAll()?:[];
+}
+
+function dt_news_active(PDO $pdo,string $surface='public-desktop',int $limit=5): array
+{
+    if(!dt_news_schema_ready($pdo))return [];
+    if(!in_array($surface,['public-desktop','signed-in-desktop'],true))throw new RuntimeException('News surface is invalid.');
+    $limit=max(1,min(20,$limit));
+    $stmt=$pdo->prepare("SELECT id,slug,headline,body_text,image_url,link_url,link_label,placement,priority,published_at,starts_at,ends_at
+        FROM news_posts_v110
+        WHERE post_status='active'
+          AND (placement=? OR placement='both')
+          AND (starts_at IS NULL OR starts_at<=NOW())
+          AND (ends_at IS NULL OR ends_at>NOW())
+        ORDER BY priority DESC,COALESCE(published_at,created_at) DESC,id DESC
+        LIMIT ?");
+    $stmt->bindValue(1,$surface,PDO::PARAM_STR);
+    $stmt->bindValue(2,$limit,PDO::PARAM_INT);
+    $stmt->execute();
+    $rows=$stmt->fetchAll()?:[];
+    foreach($rows as &$row){
+        $body=trim((string)$row['body_text']);
+        $row['body_text']=mb_strlen($body)>420?mb_substr($body,0,417).'…':$body;
+    }
+    unset($row);
+    return $rows;
 }

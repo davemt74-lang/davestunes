@@ -45,7 +45,7 @@ dt_page_header('Admin · Featured Content');
 <main class="page narrow">
   <div class="page-heading">
     <div><span class="eyebrow">Admin</span><h1>Featured Posts</h1><p>Curate albums and songs for the listener Desktop without changing anyone’s saved Desktop layout.</p></div>
-    <a class="button secondary" href="/desktop.php">Open Desktop</a>
+    <div class="action-row"><a class="button secondary" href="/admin-news.php">News & Notes</a><a class="button secondary" href="/desktop.php">Open Desktop</a></div>
   </div>
   <?php dt_form_error($error); ?>
   <?php if($notice): ?><div class="notice success"><?=dt_e($notice)?></div><?php endif; ?>

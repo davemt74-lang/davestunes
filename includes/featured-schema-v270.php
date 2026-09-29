@@ -32,6 +32,42 @@ function dt_featured_ensure_schema(?PDO $pdo=null): void
         CONSTRAINT fk_featured_creator_v270 FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS news_posts_v110 (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        slug VARCHAR(190) NOT NULL,
+        headline VARCHAR(190) NOT NULL,
+        body_text TEXT NOT NULL,
+        image_url VARCHAR(500) NOT NULL DEFAULT '',
+        link_url VARCHAR(500) NOT NULL DEFAULT '',
+        link_label VARCHAR(80) NOT NULL DEFAULT '',
+        placement VARCHAR(40) NOT NULL DEFAULT 'public-desktop',
+        post_status VARCHAR(20) NOT NULL DEFAULT 'draft',
+        priority INT NOT NULL DEFAULT 0,
+        starts_at DATETIME NULL,
+        ends_at DATETIME NULL,
+        published_at DATETIME NULL,
+        created_by_user_id BIGINT UNSIGNED NOT NULL,
+        updated_by_user_id BIGINT UNSIGNED NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_news_slug_v110 (slug),
+        INDEX idx_news_active_v110 (placement,post_status,starts_at,ends_at,priority,id),
+        CONSTRAINT fk_news_creator_v110 FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+        CONSTRAINT fk_news_updater_v110 FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS news_post_events_v110 (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        news_post_id BIGINT UNSIGNED NULL,
+        actor_user_id BIGINT UNSIGNED NULL,
+        event_type VARCHAR(80) NOT NULL,
+        metadata_json JSON NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_news_event_post_v110 (news_post_id,created_at,id),
+        CONSTRAINT fk_news_event_post_v110 FOREIGN KEY (news_post_id) REFERENCES news_posts_v110(id) ON DELETE SET NULL,
+        CONSTRAINT fk_news_event_actor_v110 FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS featured_post_events_v270 (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         featured_post_id BIGINT UNSIGNED NULL,
@@ -43,4 +79,11 @@ function dt_featured_ensure_schema(?PDO $pdo=null): void
         CONSTRAINT fk_featured_event_post_v270 FOREIGN KEY (featured_post_id) REFERENCES featured_posts_v270(id) ON DELETE SET NULL,
         CONSTRAINT fk_featured_event_actor_v270 FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
+
+function dt_news_schema_ready(?PDO $pdo=null): bool
+{
+    $pdo??=dt_db();
+    return dt_table_exists($pdo,'news_posts_v110')&&dt_table_exists($pdo,'news_post_events_v110');
 }
