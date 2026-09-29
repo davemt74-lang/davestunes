@@ -20,8 +20,9 @@ try{
     if(!$user)dt_featured_json(['ok'=>false,'error'=>'Authentication required.'],401);
     dt_featured_json([
         'ok'=>true,
-        'schemaVersion'=>'featured-v270',
+        'schemaVersion'=>'featured-v110',
         'items'=>dt_featured_desktop($pdo,$user,10),
+        'news'=>dt_news_active($pdo,'signed-in-desktop',5),
     ]);
 }catch(Throwable $e){
     error_log('DaveTunes featured content failure: '.$e->getMessage());
