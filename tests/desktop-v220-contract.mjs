@@ -1,0 +1,71 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const read = path => fs.readFileSync(new URL('../'+path, import.meta.url), 'utf8');
+const schema = read('includes/desktop-object-schema-v220.php');
+const runtime = read('includes/desktop-objects-v220.php');
+const endpoint = read('desktop-objects.php');
+const module = read('assets/desktop/module-object-runtime.js');
+const page = read('desktop.php');
+const bootstrap = read('includes/bootstrap.php');
+const migrate = read('migrate.php');
+const css = read('assets/desktop/desktop.css');
+const workflow = read('.github/workflows/foundation-v1.yml');
+
+for (const table of ['desktop_objects_v220','desktop_object_events_v220']) assert.match(schema,new RegExp('CREATE TABLE IF NOT EXISTS '+table));
+assert.match(schema,/UNIQUE KEY uq_desktop_object_user_key_v220/);
+assert.match(schema,/revision BIGINT UNSIGNED NOT NULL DEFAULT 1/);
+assert.match(runtime,/dt_desktop_object_create/);
+assert.match(runtime,/dt_desktop_object_update/);
+assert.match(runtime,/dt_desktop_object_delete/);
+assert.match(runtime,/dt_desktop_objects_reset/);
+assert.match(runtime,/WHERE id=\? AND user_id=\? AND revision=\?/);
+assert.match(runtime,/changed on another surface/);
+assert.match(runtime,/Unpin this Desktop object before moving or transforming it/);
+assert.match(runtime,/0\.25,3/);
+assert.match(runtime,/-180,180/);
+assert.match(runtime,/0,1,'Desktop X'/);
+assert.match(runtime,/65535/);
+assert.match(runtime,/desktop\.object\.created/);
+assert.match(runtime,/desktop\.object\.updated/);
+assert.match(runtime,/desktop\.object\.deleted/);
+assert.match(runtime,/desktop\.object\.reset/);
+
+assert.match(endpoint,/dt_current_user/);
+assert.match(endpoint,/dt_verify_csrf\(\)/);
+assert.match(endpoint,/Cache-Control: private, no-store/);
+assert.match(endpoint,/expected_revision/);
+assert.match(endpoint,/Desktop objects are temporarily unavailable/);
+assert.doesNotMatch(endpoint,/SELECT\s/i);
+
+assert.match(module,/spatial-object-runtime/);
+assert.match(module,/object\.create/);
+assert.match(module,/object\.update/);
+assert.match(module,/object\.delete/);
+assert.match(module,/object\.bring-front/);
+assert.match(module,/object\.reset/);
+assert.match(module,/object\.refresh/);
+assert.match(module,/setPointerCapture/);
+assert.match(module,/pointermove/);
+assert.match(module,/expected_revision/);
+assert.match(module,/JSON\.stringify\(value \?\? \{\}\)/);
+assert.match(module,/data-desktop-object-id/);
+assert.match(module,/getRegistry\('objectType'\)/);
+assert.match(module,/textContent/);
+assert.doesNotMatch(module,/innerHTML/);
+assert.doesNotMatch(module,/new Audio\s*\(/);
+
+assert.match(page,/data-desktop-object-controls/);
+assert.match(page,/data-desktop-reset/);
+assert.match(page,/module-object-runtime\.js/);
+assert.match(page,/'objects'=>true/);
+assert.match(bootstrap,/desktop-object-schema-v220\.php/);
+assert.match(bootstrap,/desktop-objects-v220\.php/);
+assert.match(migrate,/dt_desktop_object_ensure_schema\(\$pdo\)/);
+assert.match(css,/desktop-spatial-object/);
+assert.match(css,/desktop-object-controls/);
+assert.match(workflow,/node --check assets\/desktop\/module-object-runtime\.js/);
+assert.match(workflow,/node tests\/desktop-v220-contract\.mjs/);
+assert.match(workflow,/php tests\/desktop-v220-mysql\.php/);
+
+console.log('MUSIC_DESKTOP_V1_SECTION3_CONTRACT=PASS');

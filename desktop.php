@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section1',
+    'version'=>'music-desktop-v1-section3',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -13,7 +13,7 @@ $boot=[
     'capabilities'=>[
         'player'=>true,
         'dataAdapter'=>true,
-        'objects'=>false,
+        'objects'=>true,
         'turntable'=>false,
         'zScroll'=>false,
         'flowBuilder'=>false,
@@ -39,6 +39,7 @@ if($bootJson===false)$bootJson='{}';
       <a class="desktop-brand" href="/desktop.php"><span class="desktop-brand-mark" aria-hidden="true"></span>Dave's Tunes</a>
       <div class="desktop-actions">
         <a class="desktop-chip" href="/library.php">Library</a>
+        <button class="desktop-chip" data-desktop-reset type="button">Reset Desktop</button>
         <a class="desktop-chip" href="/dashboard.php">Account</a>
       </div>
     </div>
@@ -66,9 +67,7 @@ if($bootJson===false)$bootJson='{}';
       </div>
     </section>
 
-    <section class="desktop-layer desktop-layer-objects" data-desktop-layer="objects" aria-label="Spatial object layer">
-      <div class="desktop-object-hint" aria-hidden="true">Spatial album / photo / note mount</div>
-    </section>
+    <section class="desktop-layer desktop-layer-objects" data-desktop-layer="objects" aria-label="Spatial object layer"></section>
 
     <section class="desktop-layer desktop-layer-turntable" data-desktop-layer="turntable" aria-label="Turntable layer">
       <div class="turntable-mount" aria-hidden="true">
@@ -84,8 +83,9 @@ if($bootJson===false)$bootJson='{}';
       </div>
     </section>
 
-    <section class="desktop-layer desktop-layer-system" data-desktop-layer="system" aria-hidden="true">
-      <div class="system-mount"></div>
+    <section class="desktop-layer desktop-layer-system" data-desktop-layer="system" aria-label="Desktop system controls">
+      <div class="desktop-object-controls" data-desktop-object-controls hidden></div>
+      <div class="system-mount" aria-hidden="true"></div>
     </section>
   </main>
 
@@ -94,5 +94,6 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/template-midnight.js"></script>
   <script src="/assets/desktop/module-player-bridge.js"></script>
   <script src="/assets/desktop/module-library-adapter.js"></script>
+  <script src="/assets/desktop/module-object-runtime.js"></script>
 </body>
 </html>
