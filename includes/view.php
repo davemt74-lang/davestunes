@@ -20,19 +20,22 @@ function dt_page_header(string $title): void
     echo '</nav></header>';
 }
 
+function dt_player_dock(): void
+{
+    if(!dt_current_user())return;
+    echo '<aside id="dt-player-dock" class="player-dock" hidden aria-label="Now playing">';
+    echo '<div class="player-copy"><strong data-player-title>Nothing playing</strong><span data-player-artist></span></div>';
+    echo '<button type="button" class="player-icon" data-player-action="previous" aria-label="Previous">‹</button>';
+    echo '<button type="button" class="player-toggle" data-player-action="toggle">Play</button>';
+    echo '<button type="button" class="player-icon" data-player-action="next" aria-label="Next">›</button>';
+    echo '<input class="player-progress" data-player-progress type="range" min="0" max="1" step="0.1" value="0" aria-label="Playback position">';
+    echo '</aside><script src="/assets/player.js" defer></script>';
+}
+
 function dt_page_footer(): void
 {
-    $user=dt_current_user();
     echo '<footer>Dave\'s Tunes · Music belongs in a place that feels alive.</footer>';
-    if($user){
-        echo '<aside id="dt-player-dock" class="player-dock" hidden aria-label="Now playing">';
-        echo '<div class="player-copy"><strong data-player-title>Nothing playing</strong><span data-player-artist></span></div>';
-        echo '<button type="button" class="player-icon" data-player-action="previous" aria-label="Previous">‹</button>';
-        echo '<button type="button" class="player-toggle" data-player-action="toggle">Play</button>';
-        echo '<button type="button" class="player-icon" data-player-action="next" aria-label="Next">›</button>';
-        echo '<input class="player-progress" data-player-progress type="range" min="0" max="1" step="0.1" value="0" aria-label="Playback position">';
-        echo '</aside><script src="/assets/player.js" defer></script>';
-    }
+    dt_player_dock();
     echo '</body></html>';
 }
 

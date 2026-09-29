@@ -43,10 +43,13 @@ jobs:
           extensions: pdo_mysql,mbstring
           coverage: none
 
-      - name: PHP and player syntax
+      - name: PHP and JavaScript syntax
         run: |
           find . -path './.git' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check assets/player.js
+          node --check assets/desktop/desktop-core.js
+          node --check assets/desktop/template-midnight.js
+          node --check assets/desktop/module-player-bridge.js
 
       - name: Foundation architecture contract
         run: php tests/foundation-v1-contract.php
@@ -56,6 +59,9 @@ jobs:
 
       - name: Foundation V1 Section 4 playback contract
         run: php tests/playback-v130-contract.php
+
+      - name: Music Desktop V1 Section 1 contract
+        run: node tests/desktop-v200-contract.mjs
 
       - name: Foundation MySQL integration
         env:
