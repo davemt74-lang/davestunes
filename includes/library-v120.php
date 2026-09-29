@@ -259,7 +259,7 @@ function dt_library_owned_releases(PDO $pdo,int $userId): array
     $clause=dt_entitlement_active_clause('e');
     $sql="SELECT DISTINCT r.*
         FROM music_releases_v110 r
-        LEFT JOIN music_entitlements_v120 e ON e.user_id=? AND (
+        LEFT JOIN music_entitlements_v120 e ON e.user_id=? AND e.entitlement_type='own' AND (
             (e.resource_type='release' AND e.resource_id=r.id)
             OR (e.resource_type='edition' AND EXISTS (
                 SELECT 1 FROM music_release_editions_v110 ed
@@ -269,6 +269,68 @@ function dt_library_owned_releases(PDO $pdo,int $userId): array
         WHERE e.id IS NOT NULL AND {$clause}
         ORDER BY r.release_date DESC,r.title,r.id";
     $stmt=$pdo->prepare($sql);
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll()?:[];
+}
+
+function dt_library_available_releases(PDO $pdo,int $userId): array
+{
+    if($userId<1)return [];
+    $clause=dt_entitlement_active_clause('e');
+    $sql="SELECT DISTINCT r.*
+        FROM music_releases_v110 r
+        LEFT JOIN music_entitlements_v120 e ON e.user_id=? AND e.entitlement_type='access' AND (
+            (e.resource_type='release' AND e.resource_id=r.id)
+            OR (e.resource_type='edition' AND EXISTS (
+                SELECT 1 FROM music_release_editions_v110 ed
+                WHERE ed.id=e.resource_id AND ed.release_id=r.id AND ed.edition_status='active' AND ed.grants_digital_access=1
+            ))
+        )
+        WHERE e.id IS NOT NULL AND {$clause}
+        ORDER BY r.release_date DESC,r.title,r.id";
+    $stmt=$pdo->prepare($sql);
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll()?:[];
+}
+
+function dt_library_owned_recordings(PDO $pdo,int $userId): array
+{
+    if($userId<1)return [];
+    $clause=dt_entitlement_active_clause('e');
+    $sql="SELECT DISTINCT rec.*
+        FROM music_recordings_v110 rec
+        WHERE rec.recording_status='active' AND (
+            EXISTS (
+                SELECT 1 FROM music_entitlements_v120 e
+                WHERE e.user_id=? AND e.entitlement_type='own'
+                  AND e.resource_type='recording' AND e.resource_id=rec.id AND {$clause}
+            )
+            OR EXISTS (
+                SELECT 1 FROM music_release_tracks_v110 rt
+                INNER JOIN music_entitlements_v120 e ON e.resource_type='release' AND e.resource_id=rt.release_id
+                WHERE rt.recording_id=rec.id AND e.user_id=? AND e.entitlement_type='own' AND {$clause}
+            )
+            OR EXISTS (
+                SELECT 1 FROM music_release_tracks_v110 rt
+                INNER JOIN music_release_editions_v110 ed ON ed.release_id=rt.release_id
+                    AND ed.grants_digital_access=1 AND ed.edition_status='active'
+                INNER JOIN music_entitlements_v120 e ON e.resource_type='edition' AND e.resource_id=ed.id
+                WHERE rt.recording_id=rec.id AND e.user_id=? AND e.entitlement_type='own' AND {$clause}
+            )
+        )
+        ORDER BY rec.title,rec.id";
+    $stmt=$pdo->prepare($sql);
+    $stmt->execute([$userId,$userId,$userId]);
+    return $stmt->fetchAll()?:[];
+}
+
+function dt_library_saved_recordings(PDO $pdo,int $userId): array
+{
+    $stmt=$pdo->prepare("SELECT rec.*,a.name artist_name,s.created_at saved_at
+        FROM user_saved_recordings_v120 s
+        INNER JOIN music_recordings_v110 rec ON rec.id=s.recording_id
+        INNER JOIN artists a ON a.id=rec.artist_id
+        WHERE s.user_id=? ORDER BY s.created_at DESC,rec.id DESC");
     $stmt->execute([$userId]);
     return $stmt->fetchAll()?:[];
 }
