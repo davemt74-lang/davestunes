@@ -243,10 +243,35 @@
   const edgeInspector=edge=>{
     inspector.replaceChildren();
     const h=document.createElement('h2');h.textContent='Connection';
-    const p=document.createElement('p');p.textContent=edge.from+' → '+edge.to;
-    const del=button('Delete connection','delete');
-    del.addEventListener('click',async()=>{await post('delete-edge',{version_id:versionId(),edge_key:edge.key});state.selected=null;await load();});
-    inspector.append(h,p,del);
+    const form=document.createElement('form');form.className='studio-inspector-form';
+    form.append(
+      field('From node','from_node_key',edge.from),
+      field('From port','from_port',edge.fromPort||'out'),
+      field('To node','to_node_key',edge.to),
+      field('To port','to_port',edge.toPort||'in'),
+      field('Condition JSON','condition',JSON.stringify(edge.condition||{},null,2),'textarea')
+    );
+    const actions=document.createElement('div');actions.className='studio-inspector-actions';
+    actions.append(button('Save','save','primary'),button('Delete','delete'));
+    form.append(actions);
+    form.addEventListener('submit',e=>e.preventDefault());
+    form.addEventListener('click',async e=>{
+      const action=e.target?.dataset?.action;if(!action)return;
+      if(action==='save'){
+        await post('update-edge',{
+          version_id:versionId(),edge_key:edge.key,
+          from_node_key:form.from_node_key.value,from_port:form.from_port.value,
+          to_node_key:form.to_node_key.value,to_port:form.to_port.value,
+          condition:form.condition.value
+        });
+      }else if(action==='delete'){
+        if(!confirm('Delete this connection?'))return;
+        await post('delete-edge',{version_id:versionId(),edge_key:edge.key});
+        state.selected=null;
+      }
+      await load();
+    });
+    inspector.append(h,form);
   };
 
   const renderSelection=()=>{
