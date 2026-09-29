@@ -58,6 +58,7 @@ jobs:
           node --check assets/desktop/module-turntable.js
           node --check assets/desktop/module-featured-content.js
           node --check assets/desktop/module-experience-runtime.js
+          node --check assets/experience-studio.js
 
       - name: Foundation architecture contract
         run: php tests/foundation-v1-contract.php
@@ -94,6 +95,9 @@ jobs:
 
       - name: Music Desktop V1 Section 9 experience graph contract
         run: node tests/desktop-v280-contract.mjs
+
+      - name: Music Desktop V1 Section 10 Scene Navigator & Flow Builder contract
+        run: node tests/desktop-v290-contract.mjs
 
       - name: Foundation MySQL integration
         env:
@@ -170,6 +174,15 @@ jobs:
           DAVESTUNES_APP_ENV: test
           DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
         run: php tests/desktop-v280-mysql.php
+
+      - name: Music Desktop V1 Section 10 Studio MySQL integration
+        env:
+          DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
+          DAVESTUNES_DB_USER: root
+          DAVESTUNES_DB_PASS: root
+          DAVESTUNES_APP_ENV: test
+          DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
+        run: php tests/desktop-v290-mysql.php
 
       - name: Music Desktop V1 Section 5 media object MySQL integration
         env:
