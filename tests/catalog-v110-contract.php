@@ -36,6 +36,7 @@ catalog_has($catalog,'dt_catalog_add_recording_to_release','Release-track compos
 catalog_has($catalog,'Release and recording must belong to the same artist.','Cross-artist release composition guard is missing.');
 catalog_has($catalog,'dt_catalog_create_edition','Edition model is missing.');
 catalog_has($catalog,'dt_catalog_remove_release_track','Release composition must support governed corrections.');
+catalog_has($catalog,'have a frozen track list','Published release composition must be immutable.');
 catalog_has($catalog,'dt_catalog_publish_release','Publishing gate is missing.');
 catalog_has($catalog,'at least one active recording','Empty release publish guard is missing.');
 catalog_has($catalog,'music_catalog_events_v110','Catalog mutations must be auditable.');
