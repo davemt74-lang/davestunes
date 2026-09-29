@@ -63,6 +63,7 @@
   const sceneContext=()=>Object.freeze({
     runCommand:desktop.runCommand,
     emit:desktop.emit,
+    playerSnapshot:desktop.state.playerSnapshot,
     openLibrary:async(view,query='')=>{
       if(state.latched)setLatched(false);
       else{
@@ -319,7 +320,10 @@
       const onRegistered=event=>{
         if(event.detail?.type==='effect'&&event.detail.definition?.category==='z-scroll-scene')renderScenes();
       };
-      const onPlayer=()=>{if(state.active)renderScenes();};
+      const onPlayer=event=>{
+        const reason=String(event.detail?.reason||'');
+        if(state.active&&['ready','restore','trackchange','play','pause','ended','command:play-recording','command:toggle','command:next','command:previous'].includes(reason))renderScenes();
+      };
 
       toggle?.addEventListener('click',onToggle);
       close?.addEventListener('click',onClose);
@@ -333,7 +337,7 @@
       window.addEventListener('blur',onBlur);
       document.addEventListener('visibilitychange',onVisibility);
       document.addEventListener('davestunes:desktop:registered',onRegistered);
-      for(const name of ['trackchange','play','pause'])document.addEventListener('davestunes:player:'+name,onPlayer);
+      document.addEventListener('davestunes:desktop:player-snapshot',onPlayer);
 
       renderScenes();
       return()=>{
@@ -350,7 +354,7 @@
         window.removeEventListener('blur',onBlur);
         document.removeEventListener('visibilitychange',onVisibility);
         document.removeEventListener('davestunes:desktop:registered',onRegistered);
-        for(const name of ['trackchange','play','pause'])document.removeEventListener('davestunes:player:'+name,onPlayer);
+        document.removeEventListener('davestunes:desktop:player-snapshot',onPlayer);
       };
     }
   });
