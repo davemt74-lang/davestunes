@@ -9,6 +9,7 @@ $artist=dt_artist_by_id($pdo,$artistId);
 if(!$artist||!dt_artist_can($pdo,$artistId,(int)$user['id'],'view')){http_response_code(404);exit('Artist not found.');}
 $canCatalog=dt_artist_can($pdo,$artistId,(int)$user['id'],'catalog');
 $canRelease=dt_artist_can($pdo,$artistId,(int)$user['id'],'releases');
+$canMedia=dt_artist_can($pdo,$artistId,(int)$user['id'],'media');
 $error=null;
 
 if($_SERVER['REQUEST_METHOD']==='POST'){
@@ -57,7 +58,7 @@ dt_page_header('Catalog');
       <h2>Recordings / Songs</h2>
       <div class="stack">
         <?php foreach($recordings as $recording):?>
-          <div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?><?php if($recording['isrc']):?> <span class="pill"><?=dt_e($recording['isrc'])?></span><?php endif;?></div>
+          <div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?><?php if($recording['isrc']):?> <span class="pill"><?=dt_e($recording['isrc'])?></span><?php endif;?><?php if($canMedia):?> <a class="recording-media-link" href="/media-manage.php?artist=<?=$artistId?>&recording=<?=(int)$recording['id']?>">Audio</a><?php endif;?></div>
         <?php endforeach;?>
       </div>
       <?php if($canCatalog):?>

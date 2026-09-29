@@ -33,6 +33,7 @@ $saved=dt_library_saved_releases($pdo,$userId);
 $followed=dt_library_followed_artists($pdo,$userId);
 $crates=dt_library_crates($pdo,$userId);
 $discover=dt_library_published_releases($pdo,30);
+$recent=dt_playback_recent_history($pdo,$userId,8);
 $savedIds=array_fill_keys(array_map(static fn(array $row): int => (int)$row['id'],$saved),true);
 $followedIds=array_fill_keys(array_map(static fn(array $row): int => (int)$row['id'],$followed),true);
 
@@ -56,7 +57,7 @@ dt_page_header('Library');
 
     <article class="card"><h2>Owned Songs</h2>
       <?php if(!$ownedSongs):?><p class="muted">Songs you own directly or through an owned release appear here.</p><?php endif;?>
-      <div class="stack"><?php foreach($ownedSongs as $recording):?><div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?></div><?php endforeach;?></div>
+      <div class="stack"><?php foreach($ownedSongs as $recording):?><div class="song-row"><div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?></div><button type="button" class="secondary-button" data-play-recording="<?=(int)$recording['id']?>" data-source-type="library">Play</button></div><?php endforeach;?></div>
     </article>
 
     <article class="card"><h2>Saved</h2>
@@ -67,6 +68,11 @@ dt_page_header('Library');
     <article class="card"><h2>Following</h2>
       <?php if(!$followed):?><p class="muted">Artists you follow will appear here.</p><?php endif;?>
       <div class="stack"><?php foreach($followed as $artist):?><div><strong><?=dt_e($artist['name'])?></strong> <span class="pill">@<?=dt_e($artist['slug'])?></span></div><?php endforeach;?></div>
+    </article>
+
+    <article class="card"><h2>Recently Played</h2>
+      <?php if(!$recent):?><p class="muted">Listening history will appear here as you play music.</p><?php endif;?>
+      <div class="stack"><?php foreach($recent as $listen):?><div><strong><?=dt_e($listen['title'])?></strong><div class="muted"><?=dt_e($listen['artist_name'])?> · <?=number_format((int)$listen['listened_ms']/1000,1)?> sec</div></div><?php endforeach;?></div>
     </article>
 
     <article class="card"><h2>Crates</h2>
