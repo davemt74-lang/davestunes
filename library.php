@@ -56,7 +56,7 @@ dt_page_header('Library');
 
     <article class="card"><h2>Owned Songs</h2>
       <?php if(!$ownedSongs):?><p class="muted">Songs you own directly or through an owned release appear here.</p><?php endif;?>
-      <div class="stack"><?php foreach($ownedSongs as $recording):?><div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?></div><?php endforeach;?></div>
+      <div class="stack"><?php foreach($ownedSongs as $recording):?><div class="song-row"><div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?></div><button type="button" class="secondary-button" data-play-recording="<?=(int)$recording['id']?>" data-source-type="library">Play</button></div><?php endforeach;?></div>
     </article>
 
     <article class="card"><h2>Saved</h2>
