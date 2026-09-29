@@ -142,6 +142,7 @@
       scene.node.style.transform='translate3d(0,'+((0.5-local)*34)+'px,0) scale('+(0.97+opacity*0.03)+')';
       scene.node.style.pointerEvents=opacity>0.62?'auto':'none';
       scene.node.setAttribute('aria-hidden',opacity>0.35?'false':'true');
+      if(typeof scene.effect.update==='function')scene.effect.update(scene.node,local,{opacity,reducedMotion:reducedMotion.matches});
       if(p>=scene.start&&p<=scene.end)activeId=scene.effect.id;
     }
     const root=document.getElementById('dt-desktop-root');
