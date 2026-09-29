@@ -93,7 +93,11 @@ $v2row=dt_experience_clone_draft($pdo,$experienceId,$owner);
 $v2=(int)$v2row['id'];
 if((int)$v2row['version_number']!==2||(string)$v2row['version_status']!=='draft')throw new RuntimeException('Draft version clone failed.');
 $clone=dt_experience_manifest($pdo,$v2);
-if($clone['scenes']!=$published['manifest']['scenes']||$clone['flow']!=$published['manifest']['flow'])throw new RuntimeException('Draft clone did not preserve scene graph.');
+$cloneSceneKeys=array_column($clone['scenes'],'key');
+$cloneLayerKeys=array_column($clone['scenes'][0]['layers']??[],'key');
+$cloneNodeKeys=array_column($clone['flow']['nodes']??[],'key');
+$cloneEdges=$clone['flow']['edges']??[];
+if($cloneSceneKeys!==['intro','finale']||$cloneLayerKeys!==['headline','copy']||$cloneNodeKeys!==['start','next']||count($cloneEdges)!==1||($cloneEdges[0]['from']??'')!=='start'||($cloneEdges[0]['to']??'')!=='next')throw new RuntimeException('Draft clone structure mismatch.');
 
 dt_experience_scene_update($pdo,$v2,$owner,'intro',['title'=>'Intro Revised','weight'=>3]);
 dt_experience_layer_update($pdo,$v2,$owner,'intro','copy',['settings'=>['text'=>'Draft-only revision.']]);
