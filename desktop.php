@@ -39,6 +39,7 @@ if($bootJson===false)$bootJson='{}';
       <a class="desktop-brand" href="/desktop.php"><span class="desktop-brand-mark" aria-hidden="true"></span>Dave's Tunes</a>
       <div class="desktop-actions">
         <button class="desktop-chip" data-zscroll-toggle type="button" aria-pressed="false">Explore</button>
+        <button class="desktop-chip" data-zscroll-toggle type="button" aria-pressed="false" aria-controls="dt-zscroll-stage">Explore</button>
         <a class="desktop-chip" href="/library.php">Library</a>
         <button class="desktop-chip" data-desktop-reset type="button">Reset Desktop</button>
         <a class="desktop-chip" href="/dashboard.php">Account</a>
@@ -105,6 +106,8 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/module-player-bridge.js"></script>
   <script src="/assets/desktop/module-library-adapter.js"></script>
   <script src="/assets/desktop/module-object-runtime.js"></script>
+  <script src="/assets/desktop/z-scroll-effects.js"></script>
+  <script src="/assets/desktop/module-z-scroll.js"></script>
   <script src="/assets/desktop/z-scroll-effects.js"></script>
   <script src="/assets/desktop/module-z-scroll.js"></script>
 </body>
