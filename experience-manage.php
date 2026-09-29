@@ -53,6 +53,48 @@ try{
         ]);
         dt_experience_manage_json(['ok'=>true,'edge'=>$edge]);
     }
+    if($action==='update-scene'){
+        $scene=dt_experience_scene_update($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['scene_key']??''),[
+            'title'=>$_POST['title']??null,'sort_order'=>$_POST['sort_order']??null,'weight'=>$_POST['weight']??null,
+            'is_enabled'=>array_key_exists('is_enabled',$_POST)?($_POST['is_enabled']==='1'):null,'settings'=>$_POST['settings']??null
+        ]);
+        dt_experience_manage_json(['ok'=>true,'scene'=>$scene]);
+    }
+    if($action==='delete-scene'){
+        dt_experience_scene_delete($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['scene_key']??''));
+        dt_experience_manage_json(['ok'=>true]);
+    }
+    if($action==='update-layer'){
+        $layer=dt_experience_layer_update($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['scene_key']??''),(string)($_POST['layer_key']??''),[
+            'layer_type'=>$_POST['layer_type']??null,'sort_order'=>$_POST['sort_order']??null,'settings'=>$_POST['settings']??null
+        ]);
+        dt_experience_manage_json(['ok'=>true,'layer'=>$layer]);
+    }
+    if($action==='delete-layer'){
+        dt_experience_layer_delete($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['scene_key']??''),(string)($_POST['layer_key']??''));
+        dt_experience_manage_json(['ok'=>true]);
+    }
+    if($action==='update-node'){
+        $node=dt_experience_node_update($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['node_key']??''),[
+            'node_type'=>$_POST['node_type']??null,'scene_key'=>$_POST['scene_key']??null,'x'=>$_POST['x']??null,'y'=>$_POST['y']??null,'settings'=>$_POST['settings']??null
+        ]);
+        dt_experience_manage_json(['ok'=>true,'node'=>$node]);
+    }
+    if($action==='delete-node'){
+        dt_experience_node_delete($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['node_key']??''));
+        dt_experience_manage_json(['ok'=>true]);
+    }
+    if($action==='update-edge'){
+        $edge=dt_experience_edge_update($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['edge_key']??''),[
+            'from_node_key'=>$_POST['from_node_key']??null,'from_port'=>$_POST['from_port']??null,
+            'to_node_key'=>$_POST['to_node_key']??null,'to_port'=>$_POST['to_port']??null,'condition'=>$_POST['condition']??null
+        ]);
+        dt_experience_manage_json(['ok'=>true,'edge'=>$edge]);
+    }
+    if($action==='delete-edge'){
+        dt_experience_edge_delete($pdo,(int)($_POST['version_id']??0),$user,(string)($_POST['edge_key']??''));
+        dt_experience_manage_json(['ok'=>true]);
+    }
     if($action==='publish'){
         dt_experience_manage_json(['ok'=>true]+dt_experience_publish($pdo,(int)($_POST['version_id']??0),$user));
     }
