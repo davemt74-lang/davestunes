@@ -32,7 +32,7 @@ library_has($library,'dt_entitlement_grant','Entitlement grant primitive is miss
 library_has($library,'dt_entitlement_revoke','Entitlement revocation is missing.');
 library_has($library,'There is intentionally no self-service web route.','Revocation must remain an internal governed primitive.');
 library_has($library,'Entitlement idempotency key conflicts','Idempotency conflicts must fail closed.');
-library_has($library,"'granted_by_user_id'=>$grantor?:null",'Grantor lineage must be immutable on idempotent replay.');
+library_has($library,"'granted_by_user_id'=>\$grantor?:null",'Grantor lineage must be immutable on idempotent replay.');
 library_has($library,'Entitlement source reference is required.','Fulfillment grants must retain authoritative source lineage.');
 library_has($library,"resource_type='edition'",'Edition entitlements must project release access.');
 library_has($library,"e.entitlement_type='own'",'Owned-library projection must exclude temporary access.');
