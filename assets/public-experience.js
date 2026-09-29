@@ -35,7 +35,7 @@
       return;
     }
     try{
-      const response=await fetch(url,{credentials:'same-origin',headers:{Accept:'application/json'}});
+      const response=await fetch(url,{credentials:'omit',headers:{Accept:'application/json'}});
       if(response.status===304)return;
       const json=await response.json();
       if(!response.ok||!json.ok)throw new Error(json.error||'Published experience could not be loaded.');
