@@ -20,6 +20,7 @@ dt_page_header('Dashboard');
   <div class="eyebrow">Music platform foundation</div>
   <h2>Welcome, <?=dt_e((string)$user['display_name'])?></h2>
   <p class="muted"><?=dt_e((string)$user['email'])?></p>
+  <p><a class="button" href="/library.php">Open personal library</a></p>
   <?php dt_form_error($error); ?>
   <section class="grid">
     <article class="card">
