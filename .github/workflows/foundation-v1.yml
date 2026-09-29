@@ -61,6 +61,9 @@ jobs:
           node --check assets/desktop/module-experience-runtime.js
           node --check assets/experience-studio.js
 
+      - name: Foundation installer contract
+        run: php tests/installer-v101-contract.php
+
       - name: Foundation architecture contract
         run: php tests/foundation-v1-contract.php
 
