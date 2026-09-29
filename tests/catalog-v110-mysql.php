@@ -105,6 +105,12 @@ if(count(dt_catalog_release_editions($pdo,$artistId,(int)$album['id']))!==2)thro
 dt_catalog_publish_release($pdo,$artistId,(int)$album['id'],$owner);
 $published=dt_catalog_release($pdo,$artistId,(int)$album['id']);
 if((string)$published['release_status']!=='published'||empty($published['published_at']))throw new RuntimeException('Release publishing failed.');
+try{
+    dt_catalog_add_recording_to_release($pdo,$artistId,(int)$album['id'],$recordingId,$owner,1,2);
+    throw new RuntimeException('Published release accepted a track-list mutation.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Published release accepted a track-list mutation.')throw $e;
+}
 
 try{
     dt_catalog_archive_recording($pdo,$artistId,$recordingId,$owner);
