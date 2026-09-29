@@ -25,7 +25,7 @@ foreach([
     if(!str_contains($install,$required))throw new RuntimeException('Installer is missing '.$required.'.');
 }
 if(!str_contains($install,"bin2hex(random_bytes(32))"))throw new RuntimeException('Installer must generate the local application secret automatically.');
-if(!str_contains($install,"'emails'=>$adminEmail"))throw new RuntimeException('First user must become the initial administrator.');
+if(!str_contains($install,"'emails'=>\$adminEmail"))throw new RuntimeException('First user must become the initial administrator.');
 if(!str_contains($install,"SELECT COUNT(*) FROM users"))throw new RuntimeException('Installer must lock after the first user exists.');
 if(!str_contains($install,'Install & Create First User'))throw new RuntimeException('First-user setup form is missing.');
 if(!str_contains($install,'No API keys are required.'))throw new RuntimeException('Installer must explicitly avoid API-key setup.');

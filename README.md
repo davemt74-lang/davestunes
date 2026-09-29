@@ -27,3 +27,12 @@ The repository is intentionally dependency-light and targets PHP 8.1+, MySQL 8, 
 6. After the first user exists, `/install.php` locks itself and only shows a link to sign in.
 
 The installer writes `config.php`, which is excluded from Git. The database itself must already exist and the supplied database user must have permission to create tables.
+
+
+## Soft Launch RC1
+
+Current release: `1.0.0-rc1` (`soft-launch`).
+
+The soft launch intentionally focuses on the core music experience already implemented: accounts, artist identities, catalog publishing, personal library, Music Desktop, digital turntable, featured content, authored album/artist experiences, and the first-run web installer. Commerce is not part of RC1 and the public copy does not advertise purchasing.
+
+The Desktop surface and turntable visuals are generated with CSS. No background-image pack is required for the default Midnight Desk template.
