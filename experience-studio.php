@@ -9,6 +9,7 @@ $ownerId=(int)($_GET['owner_id']??($ownerType==='user'?(int)$user['id']:0));
 $key=(string)($_GET['key']??'default');
 $experience=dt_experience_find_for_owner($pdo,$ownerType,$ownerId,$key);
 $ownerContext=dt_experience_owner_context($pdo,$ownerType,$ownerId);
+if(!isset($_GET['experience_id']))dt_experience_require_owner($pdo,dt_experience_owner($ownerType),$ownerId,$user);
 $error=null;
 
 if(!$experience&&($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
