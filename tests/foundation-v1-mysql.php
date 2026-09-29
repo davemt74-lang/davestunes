@@ -22,7 +22,9 @@ $producer=dt_auth_register($pdo,'producer@example.com','producer password 1234',
 $outsider=dt_auth_register($pdo,'outsider@example.com','outsider password 1234','Outsider');
 
 if((string)$owner['email']!=='owner@example.com')throw new RuntimeException('Email normalization failed.');
-if((string)$owner['password_hash']==='correct horse battery staple')throw new RuntimeException('Password was stored in plaintext.');
+$storedHash=(string)$pdo->query("SELECT password_hash FROM users WHERE id=".(int)$owner['id'])->fetchColumn();
+if($storedHash===''||$storedHash==='correct horse battery staple'||!password_verify('correct horse battery staple',$storedHash))throw new RuntimeException('Password hashing contract failed.');
+if(array_key_exists('password_hash',$owner))throw new RuntimeException('Safe user projection leaked the password hash.');
 
 $login=dt_auth_attempt_login($pdo,'owner@example.com','correct horse battery staple');
 if(!$login||(int)$login['id']!==(int)$owner['id'])throw new RuntimeException('Valid login failed.');
@@ -37,6 +39,12 @@ if((int)$second['owner_user_id']!==(int)$owner['id'])throw new RuntimeException(
 
 dt_artist_set_membership($pdo,$artistId,(int)$manager['id'],'manager','active',$owner);
 dt_artist_set_membership($pdo,$artistId,(int)$producer['id'],'producer','active',$owner);
+try{
+    dt_artist_set_membership($pdo,$artistId,999999,'viewer','active',$owner);
+    throw new RuntimeException('Nonexistent user was added to an artist.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Nonexistent user was added to an artist.')throw $e;
+}
 if(!dt_artist_can($pdo,$artistId,(int)$manager['id'],'catalog'))throw new RuntimeException('Manager lacks catalog capability.');
 if(!dt_artist_can($pdo,$artistId,(int)$producer['id'],'production'))throw new RuntimeException('Producer lacks production capability.');
 if(dt_artist_can($pdo,$artistId,(int)$producer['id'],'profile'))throw new RuntimeException('Producer gained profile capability.');
