@@ -2,6 +2,8 @@
 declare(strict_types=1);
 require __DIR__.'/includes/bootstrap.php';
 
+if(!in_array($_SERVER['REQUEST_METHOD']??'GET',['GET','HEAD'],true)){http_response_code(405);header('Allow: GET, HEAD');exit;}
+
 $pdo=dt_db();
 $recordingId=max(0,(int)($_GET['recording']??0));
 $requestedAssetId=max(0,(int)($_GET['asset']??0));
@@ -40,8 +42,10 @@ header('Content-Length: '.$length);
 header('Accept-Ranges: bytes');
 header('Cache-Control: private, no-store');
 header('X-Content-Type-Options: nosniff');
+header('Cross-Origin-Resource-Policy: same-origin');
 header('Content-Disposition: inline; filename="track.'.dt_playback_allowed_mimes()[(string)$asset['mime_type']].'"');
 if($status===206)header("Content-Range: bytes {$start}-{$end}/{$size}");
+if(($_SERVER['REQUEST_METHOD']??'GET')==='HEAD')exit;
 
 $fp=fopen($path,'rb');
 if(!$fp){http_response_code(404);exit;}
