@@ -521,7 +521,12 @@ function dt_experience_owner_context(PDO $pdo,string $ownerType,int $ownerId): a
     }
     if($ownerType==='artist'){
         $artist=dt_artist_by_id($pdo,$ownerId);
-        return ['title'=>($artist?(string)$artist['name']:'Artist').' · Experience Studio','subtitle'=>'Build this artist desktop experience.','experience_name'=>'Artist Experience','back_url'=>''];
+        return [
+            'title'=>($artist?(string)$artist['name']:'Artist').' · Experience Studio',
+            'subtitle'=>'Build the public artist desktop experience. Drafts stay private until you publish.',
+            'experience_name'=>($artist?(string)$artist['name']:'Artist').' Experience',
+            'back_url'=>$artist?'/artist.php?artist='.rawurlencode((string)$artist['slug']):'',
+        ];
     }
     if($ownerType==='recording'){
         $stmt=$pdo->prepare("SELECT title FROM music_recordings_v110 WHERE id=? LIMIT 1");$stmt->execute([$ownerId]);$title=(string)($stmt->fetchColumn()?:'Recording');

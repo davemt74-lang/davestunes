@@ -25,7 +25,7 @@ dt_page_header((string)$release['title']);
     <div class="album-meta">
       <div class="eyebrow"><?=dt_e((string)$release['release_type'])?></div>
       <h1><?=dt_e((string)$release['title'])?></h1>
-      <p class="lede"><?=dt_e((string)$release['artist_name'])?></p>
+      <p class="lede"><a href="/artist.php?artist=<?=rawurlencode((string)$release['artist_slug'])?>"><?=dt_e((string)$release['artist_name'])?></a></p>
       <?php if(!empty($release['description'])):?><p><?=dt_e((string)$release['description'])?></p><?php endif;?>
       <div class="album-experience-launch">
         <?php if($hasExperience):?><a class="button" href="/album-experience.php?release=<?=$releaseId?>">Enter Experience</a><?php endif;?>

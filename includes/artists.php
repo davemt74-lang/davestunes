@@ -196,3 +196,20 @@ function dt_artist_transfer_owner(PDO $pdo,int $artistId,int $newOwnerUserId,arr
         throw $e;
     }
 }
+
+
+function dt_artist_public_url(string $value): string
+{
+    $value=trim($value);
+    if($value==='')return '';
+    $parts=parse_url($value);
+    if(!is_array($parts)||!isset($parts['scheme'])||!in_array(strtolower((string)$parts['scheme']),['http','https'],true))return '';
+    return $value;
+}
+
+function dt_artist_public_image(string $value): string
+{
+    $value=trim($value);
+    if($value===''||!str_starts_with($value,'/')||str_contains($value,'..'))return '';
+    return preg_match('/^[A-Za-z0-9\/_\.\-%]+$/',$value)?$value:'';
+}
