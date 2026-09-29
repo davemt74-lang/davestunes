@@ -21,11 +21,13 @@ try{
     if(!$user)dt_desktop_media_json(['ok'=>false,'error'=>'Authentication required.'],401);
     $type=(string)($_GET['type']??'');
     $id=max(0,(int)($_GET['id']??0));
-    if($type!=='release'||$id<1)dt_desktop_media_json(['ok'=>false,'error'=>'Media object was not found.'],404);
+    if(!in_array($type,['release','artist'],true)||$id<1)dt_desktop_media_json(['ok'=>false,'error'=>'Media object was not found.'],404);
 
-    $release=dt_desktop_media_release($pdo,$user,$id);
-    if(!$release)dt_desktop_media_json(['ok'=>false,'error'=>'Media object was not found.'],404);
-    dt_desktop_media_json(['ok'=>true,'schemaVersion'=>'desktop-media-v240','media'=>$release]);
+    $media=$type==='release'
+        ?dt_desktop_media_release($pdo,$user,$id)
+        :dt_desktop_media_artist($pdo,$user,$id);
+    if(!$media)dt_desktop_media_json(['ok'=>false,'error'=>'Media object was not found.'],404);
+    dt_desktop_media_json(['ok'=>true,'schemaVersion'=>'desktop-media-v330','media'=>$media]);
 }catch(Throwable $e){
     error_log('DaveTunes Desktop media hydrate failure: '.$e->getMessage());
     dt_desktop_media_json(['ok'=>false,'error'=>'Media object is temporarily unavailable.'],500);
