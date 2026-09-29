@@ -41,7 +41,7 @@ foreach([
 if(!str_contains($service,"['http','https']"))throw new RuntimeException('News URL validation must restrict external schemes.');
 if(!str_contains($service,"placement='both'")&&!str_contains($service,"placement=? OR placement='both'"))throw new RuntimeException('News active projection must support both placement.');
 if(!str_contains($service,'mb_strlen($body)>420'))throw new RuntimeException('Desktop news projection must bound article excerpts.');
-if(!str_contains($service,"dt_news_active($pdo,'public-desktop'"))throw new RuntimeException('Public News & Notes must prefer canonical CMS posts.');
+if(!str_contains($service,'dt_news_active($pdo,\'public-desktop\''))throw new RuntimeException('Public News & Notes must prefer canonical CMS posts.');
 
 foreach(['News & Notes','image_url','link_url','link_label','placement','starts_at','ends_at','post_status','priority'] as $needle){
     if(!str_contains($admin,$needle))throw new RuntimeException('Admin News CMS missing '.$needle.'.');
