@@ -199,7 +199,7 @@ function dt_catalog_add_recording_to_release(PDO $pdo,int $artistId,int $release
     $release=dt_catalog_release($pdo,$artistId,$releaseId);
     $recording=dt_catalog_recording($pdo,$artistId,$recordingId);
     if(!$release||!$recording)throw new RuntimeException('Release and recording must belong to the same artist.');
-    if((string)$release['release_status']==='archived')throw new RuntimeException('Archived releases cannot be edited.');
+    if(!in_array((string)$release['release_status'],['draft','ready','scheduled'],true))throw new RuntimeException('Published, withdrawn, and archived releases have a frozen track list.');
     if((string)$recording['recording_status']==='archived')throw new RuntimeException('Archived recordings cannot be added to releases.');
     $discNumber=max(1,$discNumber);
     $trackNumber=max(1,$trackNumber);
@@ -235,7 +235,7 @@ function dt_catalog_remove_release_track(PDO $pdo,int $artistId,int $releaseTrac
     dt_catalog_require_artist($pdo,$artistId,$user,'catalog');
     $row=dt_catalog_release_track($pdo,$artistId,$releaseTrackId);
     if(!$row)throw new RuntimeException('Release track was not found.');
-    if((string)$row['release_status']==='archived')throw new RuntimeException('Archived releases cannot be edited.');
+    if(!in_array((string)$row['release_status'],['draft','ready','scheduled'],true))throw new RuntimeException('Published, withdrawn, and archived releases have a frozen track list.');
     $pdo->prepare('DELETE FROM music_release_tracks_v110 WHERE id=?')->execute([$releaseTrackId]);
     dt_catalog_event($pdo,$artistId,'release_track',$releaseTrackId,'release.track_removed',(int)$user['id'],[
         'release_id'=>(int)$row['release_id'],
