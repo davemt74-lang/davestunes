@@ -221,9 +221,19 @@
     id:'media.refresh-release',
     run:async payload=>{
       const id=Number(payload?.releaseId||0);
-      if(id>0)hydration.delete(id);else hydration.clear();
+      if(id>0)hydration.delete('release:'+id);else hydration.clear();
       await desktop.runCommand('object.refresh');
       return {releaseId:id||null};
+    }
+  });
+
+  desktop.registerCommand({
+    id:'media.refresh-artist',
+    run:async payload=>{
+      const id=Number(payload?.artistId||0);
+      if(id>0)hydration.delete('artist:'+id);else hydration.clear();
+      await desktop.runCommand('object.refresh');
+      return {artistId:id||null};
     }
   });
 
