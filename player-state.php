@@ -14,7 +14,8 @@ function dt_player_json(mixed $payload,int $status=200): never
 
 try{
     $pdo=dt_db();
-    $user=dt_require_user($pdo);
+    $user=dt_current_user($pdo);
+    if(!$user)dt_player_json(['ok'=>false,'error'=>'Authentication required.'],401);
     $userId=(int)$user['id'];
     $sessionKey=(string)($_GET['session']??$_POST['session_key']??'primary');
 
