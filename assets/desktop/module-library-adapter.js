@@ -57,6 +57,17 @@
     copy.append(badges);
 
     const actions = element('div', 'desktop-card-actions');
+    const place = element('button', 'desktop-card-button secondary', 'Place');
+    place.type = 'button';
+    place.title = 'Place this album on your desktop';
+    place.addEventListener('click', async event => {
+      event.stopPropagation();
+      try {
+        await ctx.runCommand('media.place-release', { releaseId: item.id });
+      } catch (error) { ctx.emit('media-object-error', { error }); }
+    });
+    actions.append(place);
+
     if (item.playableTrackIds?.length) {
       const play = element('button', 'desktop-card-button', 'Play');
       play.type = 'button';
