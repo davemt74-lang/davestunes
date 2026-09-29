@@ -69,6 +69,20 @@ if(dt_playback_access_mode($pdo,$recordingId,$listener)!=='preview')throw new Ru
 $selected=dt_playback_select_media($pdo,$recordingId,$listener);
 if((string)$selected['access_mode']!=='preview'||(int)$selected['asset']['id']!==(int)$preview['id'])throw new RuntimeException('Preview media selection failed.');
 
+$noMediaRecording=dt_catalog_create_recording($pdo,$artistId,$owner,['title'=>'Silent Metadata','isrc'=>'USPLY2612346','duration_ms'=>120000]);
+$noMediaRelease=dt_catalog_create_release($pdo,$artistId,$owner,['title'=>'Silent Metadata','release_type'=>'single']);
+dt_catalog_add_recording_to_release($pdo,$artistId,(int)$noMediaRelease['id'],(int)$noMediaRecording['id'],$owner,1,1);
+dt_catalog_publish_release($pdo,$artistId,(int)$noMediaRelease['id'],$owner);
+if(dt_playback_access_mode($pdo,(int)$noMediaRecording['id'],$listener)!=='preview')throw new RuntimeException('Published metadata did not resolve preview authorization.');
+if(dt_playback_select_media($pdo,(int)$noMediaRecording['id'],$listener)!==null)throw new RuntimeException('Recording without media incorrectly resolved a playable asset.');
+if(dt_playback_can_queue($pdo,(int)$listener['id'],(int)$noMediaRecording['id']))throw new RuntimeException('Recording without media was accepted into the queue.');
+try{
+    dt_playback_begin_listen($pdo,(int)$listener['id'],'browser:test',(int)$noMediaRecording['id'],'550e8400-e29b-41d4-a716-446655440001','release',(int)$noMediaRelease['id']);
+    throw new RuntimeException('Recording without media created listening history.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Recording without media created listening history.')throw $e;
+}
+
 $grant=dt_entitlement_grant($pdo,[
     'grant_key'=>'purchase:playback-order:1',
     'user_id'=>(int)$listener['id'],
