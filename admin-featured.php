@@ -15,9 +15,16 @@ if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
             dt_featured_delete($pdo,$user,(int)($_POST['id']??0));
             $notice='Featured post deleted.';
         }else{
+            $contentType=(string)($_POST['content_type']??'');
+            $contentId=(int)($_POST['content_id']??0);
+            $contentRef=(string)($_POST['content_ref']??'');
+            if($contentRef!==''&&preg_match('/^(release|recording):(\\d+)$/',$contentRef,$match)){
+                $contentType=$match[1];
+                $contentId=(int)$match[2];
+            }
             dt_featured_save($pdo,$user,[
-                'content_type'=>$_POST['content_type']??'',
-                'content_id'=>$_POST['content_id']??0,
+                'content_type'=>$contentType,
+                'content_id'=>$contentId,
                 'headline'=>$_POST['headline']??'',
                 'body_text'=>$_POST['body_text']??'',
                 'post_status'=>$_POST['post_status']??'draft',
@@ -37,7 +44,7 @@ dt_page_header('Admin · Featured Content');
 ?>
 <main class="page narrow">
   <div class="page-heading">
-    <div><span class="eyebrow">Admin</span><h1>Featured Content</h1><p>Curate albums and songs for the listener Desktop without changing anyone’s saved Desktop layout.</p></div>
+    <div><span class="eyebrow">Admin</span><h1>Featured Posts</h1><p>Curate albums and songs for the listener Desktop without changing anyone’s saved Desktop layout.</p></div>
     <a class="button secondary" href="/desktop.php">Open Desktop</a>
   </div>
   <?php dt_form_error($error); ?>
@@ -48,14 +55,16 @@ dt_page_header('Admin · Featured Content');
     <form method="post" class="form-grid">
       <?=dt_csrf_field()?>
       <input type="hidden" name="action" value="save">
-      <label>Content type
-        <select name="content_type" required>
-          <option value="release">Album / release</option>
-          <option value="recording">Song / recording</option>
+      <label class="wide">Album or song
+        <select name="content_ref" required>
+          <option value="">Choose published music…</option>
+          <optgroup label="Albums">
+            <?php foreach($options['releases'] as $item): ?><option value="release:<?=dt_e((string)$item['id'])?>"><?=dt_e((string)$item['artist_name'])?> — <?=dt_e((string)$item['title'])?></option><?php endforeach; ?>
+          </optgroup>
+          <optgroup label="Songs">
+            <?php foreach($options['recordings'] as $item): ?><option value="recording:<?=dt_e((string)$item['id'])?>"><?=dt_e((string)$item['artist_name'])?> — <?=dt_e((string)$item['title'])?></option><?php endforeach; ?>
+          </optgroup>
         </select>
-      </label>
-      <label>Content ID
-        <input type="number" name="content_id" min="1" required placeholder="Release or recording ID">
       </label>
       <label class="wide">Headline
         <input type="text" name="headline" maxlength="190" placeholder="Featured this week">
