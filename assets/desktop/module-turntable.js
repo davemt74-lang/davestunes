@@ -13,7 +13,7 @@
   let progress=null;
   let dropHint=null;
 
-  const player=()=>window.DaveTunesPlayer;
+  const snapshot=()=>desktop.state.playerSnapshot||null;
 
   const safeCover=path=>{
     const value=String(path||'').trim();
@@ -21,17 +21,13 @@
     return value;
   };
 
-  const currentProgress=()=>{
-    const audio=player()?.audio;
-    if(!audio||!Number.isFinite(audio.duration)||audio.duration<=0)return 0;
-    return Math.max(0,Math.min(1,(audio.currentTime||0)/audio.duration));
-  };
+  const currentProgress=()=>Math.max(0,Math.min(1,Number(snapshot()?.progress||0)));
 
   const updateMotion=()=>{
     if(!deck)return;
     const p=currentProgress();
     deck.style.setProperty('--turntable-progress',String(p));
-    deck.dataset.turntablePlaying=player()?.audio&&!player().audio.paused?'true':'false';
+    deck.dataset.turntablePlaying=snapshot()?.isPlaying?'true':'false';
     if(arm)arm.style.transform='rotate('+(14+p*28)+'deg)';
     if(progress){
       progress.max=1000;
@@ -41,13 +37,13 @@
 
   const updateCurrent=()=>{
     if(!deck)return;
-    const current=player()?.state?.current||null;
+    const current=snapshot()?.current||null;
     deck.dataset.turntableLoaded=current?'true':'false';
     if(title)title.textContent=current?.title||'No record loaded';
-    if(artist)artist.textContent=current?.artist_name||'Drop an album here or choose a track.';
+    if(artist)artist.textContent=current?.artistName||'Drop an album here or choose a track.';
     if(label){
       label.replaceChildren();
-      const cover=safeCover(current?.cover_path);
+      const cover=safeCover(current?.coverPath);
       if(cover){
         const image=document.createElement('img');
         image.src=cover;
@@ -64,10 +60,8 @@
   };
 
   const toggle=async()=>{
-    const p=player();
-    if(!p||!p.state.current)return;
-    if(p.audio.paused)await p.play();
-    else p.pause();
+    if(!snapshot()?.current)return;
+    await desktop.runCommand('player.toggle');
   };
 
   const hydrateRelease=async releaseId=>{
@@ -127,11 +121,11 @@
   };
 
   const onSeek=event=>{
-    const p=player();
-    if(!p||!Number.isFinite(p.audio.duration)||p.audio.duration<=0)return;
-    const fraction=Number(event.currentTarget.value||0)/1000;
-    p.seek(p.audio.duration*Math.max(0,Math.min(1,fraction)));
-    updateMotion();
+    if(Number(snapshot()?.durationSeconds||0)<=0)return;
+    const fraction=Math.max(0,Math.min(1,Number(event.currentTarget.value||0)/1000));
+    desktop.runCommand('player.seek-fraction',{fraction})
+      .then(()=>updateMotion())
+      .catch(error=>desktop.emit('turntable-error',{error}));
   };
 
   desktop.registerCommand({
@@ -160,25 +154,16 @@
       controls.forEach(button=>button.addEventListener('click',onControl));
       progress?.addEventListener('input',onSeek);
 
-      const onPlayer=()=>updateCurrent();
-      const onTime=()=>updateMotion();
+      const onSnapshot=()=>updateCurrent();
       document.addEventListener('davestunes:desktop:object-dropped',onObjectDrop);
-      for(const name of ['ready','restore','trackchange','play','pause','ended']){
-        document.addEventListener('davestunes:player:'+name,onPlayer);
-      }
-      document.addEventListener('davestunes:player:time',onTime);
-      document.addEventListener('davestunes:player:seek',onTime);
+      document.addEventListener('davestunes:desktop:player-snapshot',onSnapshot);
       updateCurrent();
 
       return()=>{
         controls.forEach(button=>button.removeEventListener('click',onControl));
         progress?.removeEventListener('input',onSeek);
         document.removeEventListener('davestunes:desktop:object-dropped',onObjectDrop);
-        for(const name of ['ready','restore','trackchange','play','pause','ended']){
-          document.removeEventListener('davestunes:player:'+name,onPlayer);
-        }
-        document.removeEventListener('davestunes:player:time',onTime);
-        document.removeEventListener('davestunes:player:seek',onTime);
+        document.removeEventListener('davestunes:desktop:player-snapshot',onSnapshot);
       };
     }
   });
