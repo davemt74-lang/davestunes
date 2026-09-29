@@ -12,6 +12,7 @@
     playerSnapshot: null,
     experienceManifest: null,
     experienceHash: '',
+    experienceDataMode: 'library',
     ready: false,
   };
 
