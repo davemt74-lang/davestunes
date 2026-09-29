@@ -282,14 +282,19 @@
   desktop.registerCommand({
     id:'zscroll.enter',
     run:async payload=>{
-      state.latched=Boolean(payload?.latched);
-      enter(payload?.source||'command');
+      if(payload?.latched)setLatched(true);
+      else enter(payload?.source||'command');
       return {progress:state.progress};
     }
   });
   desktop.registerCommand({
     id:'zscroll.exit',
-    run:async()=>{state.held=false;state.latched=false;exit(true);return {progress:state.progress};}
+    run:async()=>{
+      state.held=false;
+      if(state.latched)setLatched(false);
+      else exit(true);
+      return {progress:state.progress};
+    }
   });
   desktop.registerCommand({
     id:'zscroll.set-progress',
