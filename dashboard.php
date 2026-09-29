@@ -28,7 +28,7 @@ dt_page_header('Dashboard');
       <?php if(!$artists):?><p class="muted">Create an artist identity to begin publishing music.</p><?php endif;?>
       <div class="stack">
       <?php foreach($artists as $artist):?>
-        <div class="artist-card"><h3><?=dt_e($artist['name'])?></h3><span class="pill"><?=dt_e($artist['artist_role'])?></span> <span class="pill">@<?=dt_e($artist['slug'])?></span><p><a href="/catalog.php?artist=<?=(int)$artist['id']?>">Open catalog →</a></p></div>
+        <div class="artist-card"><h3><?=dt_e($artist['name'])?></h3><span class="pill"><?=dt_e($artist['artist_role'])?></span> <span class="pill">@<?=dt_e($artist['slug'])?></span><p class="action-row"><a href="/catalog.php?artist=<?=(int)$artist['id']?>">Open catalog →</a><a href="/artist.php?artist=<?=urlencode((string)$artist['slug'])?>">Public Profile →</a><?php if(dt_artist_can($pdo,(int)$artist['id'],(int)$user['id'],'catalog')):?><a href="/experience-studio.php?owner_type=artist&owner_id=<?=(int)$artist['id']?>&key=default">Build Experience →</a><?php endif;?></p></div>
       <?php endforeach;?>
       </div>
     </article>
