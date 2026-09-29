@@ -120,6 +120,7 @@ $editionGrant=dt_entitlement_grant($pdo,[
 if(!dt_entitlement_user_has_release($pdo,(int)$listener['id'],(int)$release['id']))throw new RuntimeException('Digital edition did not project release access.');
 if(!dt_entitlement_user_has_recording($pdo,(int)$listener['id'],(int)$recording['id']))throw new RuntimeException('Digital edition did not project recording access.');
 if(count(dt_library_owned_releases($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Edition ownership did not project into the owned library.');
+if(count(dt_library_owned_recordings($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Owned release did not project its canonical recording into owned songs.');
 
 $expired=dt_entitlement_grant($pdo,[
     'grant_key'=>'promo:expired',
@@ -163,6 +164,8 @@ $draftGrant=dt_entitlement_grant($pdo,[
 if(!dt_entitlement_user_has_release($pdo,(int)$other['id'],(int)$draftRelease['id']))throw new RuntimeException('Pre-release entitlement did not activate.');
 dt_library_save_release($pdo,(int)$other['id'],(int)$draftRelease['id']);
 if(count(dt_library_saved_releases($pdo,(int)$other['id']))!==1)throw new RuntimeException('Entitled private release could not be saved.');
+if(count(dt_library_owned_releases($pdo,(int)$other['id']))!==0)throw new RuntimeException('Temporary pre-release access was incorrectly labeled as ownership.');
+if(count(dt_library_available_releases($pdo,(int)$other['id']))!==1)throw new RuntimeException('Temporary pre-release access was not projected as available.');
 
 try{
     dt_entitlement_grant($pdo,[
