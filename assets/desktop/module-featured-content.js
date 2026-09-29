@@ -79,7 +79,10 @@
     const items=Array.isArray(json.items)?json.items:[];
     mount.replaceChildren();
     mount.hidden=!items.length;
-    if(!items.length)return [];
+    if(!items.length){
+      ctx.emit('featured-loaded',{items:[],empty:true});
+      return [];
+    }
 
     const shell=el('div','featured-desktop-shell');
     const heading=el('div','featured-desktop-heading');

@@ -59,8 +59,11 @@ foreach(['library-loaded','library-error','featured-loaded','featured-error','ob
 if(!str_contains($splash,"data-splash-state")&&!str_contains($splash,"splashState"))throw new RuntimeException('Splash exit state is missing.');
 if(!str_contains($css,'.desktop-splash'))throw new RuntimeException('Splash styling is missing.');
 if(!str_contains($css,'@keyframes desktopSplashOut'))throw new RuntimeException('Splash exit animation is missing.');
+if(!str_contains($splash,"setTimeout(()=>release('failsafe'),7000)"))throw new RuntimeException('Splash must have a hard fail-safe.');
+if(!str_contains($splash,"data-desktop-featured"))throw new RuntimeException('Splash must tolerate missing optional featured mount.');
 
 if(!str_contains($featuredJs,"personalizationState==='starter'"))throw new RuntimeException('Starter Desktop featured messaging is missing.');
+if(!str_contains($featuredJs,"featured-loaded',{items:[],empty:true}"))throw new RuntimeException('Empty featured state must still satisfy splash readiness.');
 if(!str_contains($signup,"dt_redirect('/desktop.php')"))throw new RuntimeException('Signup must land on the Music Desktop.');
 if(!str_contains($login,"dt_redirect('/desktop.php')"))throw new RuntimeException('Login must land on the Music Desktop.');
 
