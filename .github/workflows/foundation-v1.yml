@@ -53,15 +53,6 @@ jobs:
       - name: Foundation V1 Section 2 catalog contract
         run: php tests/catalog-v110-contract.php
 
-      - name: Foundation V1 Section 2 catalog MySQL integration
-        env:
-          DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
-          DAVESTUNES_DB_USER: root
-          DAVESTUNES_DB_PASS: root
-          DAVESTUNES_APP_ENV: test
-          DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
-        run: php tests/catalog-v110-mysql.php
-
       - name: Foundation MySQL integration
         env:
           DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
@@ -70,3 +61,12 @@ jobs:
           DAVESTUNES_APP_ENV: test
           DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
         run: php tests/foundation-v1-mysql.php
+
+      - name: Foundation V1 Section 2 catalog MySQL integration
+        env:
+          DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
+          DAVESTUNES_DB_USER: root
+          DAVESTUNES_DB_PASS: root
+          DAVESTUNES_APP_ENV: test
+          DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
+        run: php tests/catalog-v110-mysql.php
