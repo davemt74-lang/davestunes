@@ -56,6 +56,7 @@ dt_page_header('Experience Studio');
           <button type="button" data-studio-action="add-scene">+ Scene</button>
           <button type="button" data-studio-action="add-node">+ Node</button>
           <button type="button" data-studio-action="connect">+ Connect</button>
+          <button type="button" data-studio-action="effect-preset">+ Effect</button>
           <button type="button" data-studio-action="preview">Preview</button>
           <button type="button" class="primary" data-studio-action="publish">Publish</button>
         </div>
@@ -91,6 +92,7 @@ dt_page_header('Experience Studio');
         csrf:<?=json_encode(dt_csrf_token(),JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>
       };
     </script>
+    <script src="/assets/desktop/experience-effects.js"></script>
     <script src="/assets/desktop/module-experience-runtime.js"></script>
     <script src="/assets/experience-studio.js"></script>
   <?php endif; ?>
