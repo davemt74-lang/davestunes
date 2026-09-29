@@ -200,6 +200,19 @@ function dt_desktop_data_song_dto(PDO $pdo,int $userId,array $user,array $record
     ];
 }
 
+function dt_desktop_data_direct_access_recordings(PDO $pdo,int $userId): array
+{
+    $clause=dt_entitlement_active_clause('e');
+    $stmt=$pdo->prepare("SELECT DISTINCT r.*,a.name artist_name
+        FROM music_entitlements_v120 e
+        INNER JOIN music_recordings_v110 r ON r.id=e.resource_id AND r.recording_status='active'
+        INNER JOIN artists a ON a.id=r.artist_id AND a.artist_status='active'
+        WHERE e.user_id=? AND e.resource_type='recording' AND e.entitlement_type='access' AND {$clause}
+        ORDER BY r.title,r.id");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll()?:[];
+}
+
 function dt_desktop_data_songs(PDO $pdo,int $userId,array $user,string $query='',int $limit=200): array
 {
     $savedIds=dt_desktop_data_saved_recording_ids($pdo,$userId);
@@ -217,6 +230,22 @@ function dt_desktop_data_songs(PDO $pdo,int $userId,array $user,string $query=''
             $recording=dt_catalog_recording($pdo,(int)$release['artist_id'],$id);
             if(!$recording)continue;
             $map[$id]=dt_desktop_data_song_dto($pdo,$userId,$user,$recording,'available',isset($savedIds[$id]));
+        }
+    }
+
+    foreach(dt_desktop_data_direct_access_recordings($pdo,$userId) as $recording){
+        $id=(int)$recording['id'];
+        if(isset($map[$id]))continue;
+        $map[$id]=dt_desktop_data_song_dto($pdo,$userId,$user,$recording,'available',isset($savedIds[$id]));
+    }
+
+    foreach(dt_library_saved_releases($pdo,$userId) as $release){
+        foreach(dt_desktop_data_release_tracks($pdo,$userId,(int)$release['id'],$user) as $track){
+            $id=(int)$track['id'];
+            if(isset($map[$id]))continue;
+            $recording=dt_catalog_recording($pdo,(int)$release['artist_id'],$id);
+            if(!$recording)continue;
+            $map[$id]=dt_desktop_data_song_dto($pdo,$userId,$user,$recording,'saved',isset($savedIds[$id]));
         }
     }
 
