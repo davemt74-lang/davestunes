@@ -19,7 +19,7 @@ assert.match(page, /'unifiedPlayer'=>true/);
 assert.match(page, /module-player-bridge\.js/);
 assert.match(page, /module-turntable\.js/);
 
-assert.match(core,/playerSnapshot:null/);
+assert.match(core,/playerSnapshot:\s*null/);
 
 for (const command of [
   'player.play-recording','player.replace-queue','player.play','player.pause','player.toggle',
