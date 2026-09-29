@@ -62,6 +62,7 @@
     id: 'zscroll.now-playing',
     category: 'z-scroll-scene',
     label: 'Now Playing',
+    order: 10,
     weight: 18,
     render: (data, ctx) => {
       const scene = el('div', 'z-scroll-now');
@@ -100,6 +101,7 @@
     id: 'zscroll.albums',
     category: 'z-scroll-scene',
     label: 'Albums',
+    order: 20,
     weight: 22,
     render: (data, ctx) => {
       const scene = el('div', 'z-scroll-collection');
@@ -119,6 +121,7 @@
     id: 'zscroll.artists',
     category: 'z-scroll-scene',
     label: 'Artists',
+    order: 30,
     weight: 18,
     render: (data, ctx) => {
       const scene = el('div','z-scroll-collection');
@@ -150,6 +153,7 @@
     id: 'zscroll.playlists',
     category: 'z-scroll-scene',
     label: 'Playlists',
+    order: 40,
     weight: 18,
     render: (data, ctx) => {
       const scene=el('div','z-scroll-collection');
@@ -184,6 +188,7 @@
     id: 'zscroll.discovery',
     category: 'z-scroll-scene',
     label: 'Recent & Discover',
+    order: 50,
     weight: 14,
     render: (data, ctx) => {
       const scene=el('div','z-scroll-split');
@@ -219,6 +224,7 @@
     id: 'zscroll.library',
     category: 'z-scroll-scene',
     label: 'Full Library',
+    order: 60,
     weight: 10,
     render: (data, ctx) => {
       const scene=el('div','z-scroll-library-end');
