@@ -58,7 +58,7 @@
     if(settings.title)root.append(el('h2','',String(settings.title)));
     for(const layer of scene.layers||[]){
       const rendered=renderLayer(layer,ctx);
-      if(rendered)root.append(rendered);
+      if(rendered){ rendered.dataset.experienceLayerKey=String(layer.key||''); root.append(rendered); }
     }
     return root;
   };
@@ -69,7 +69,16 @@
       id:'experience.'+String(scene.key||'scene'),
       label:String(scene.title||scene.key||'Scene'),
       weight:Math.max(.1,Number(scene.weight)||1),
-      render:(_data,ctx)=>renderScene(scene,ctx)
+      render:(_data,ctx)=>renderScene(scene,ctx),
+      update:(node,progress)=>{
+        const lib=window.DaveTunesEffectsLibrary;
+        if(!lib)return;
+        lib.applyStack(node,scene.settings?.effects||[],progress);
+        for(const layer of scene.layers||[]){
+          const target=node.querySelector('[data-experience-layer-key="'+String(layer.key||'')+'"]');
+          if(target)lib.applyStack(target,layer.settings?.effects||[],progress);
+        }
+      }
     }));
 
   const fetchExperience=async(ownerType,ownerId,key='default')=>{
