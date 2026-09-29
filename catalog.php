@@ -87,6 +87,10 @@ dt_page_header('Catalog');
             <span class="muted">Disc <?=(int)$releaseTrack['disc_number']?> · Track <?=(int)$releaseTrack['track_number']?></span>
             <?php if($canCatalog&&$release['release_status']!=='archived'):?><form method="post" class="inline-form"><?=dt_csrf_field()?><input type="hidden" name="artist_id" value="<?=$artistId?>"><input type="hidden" name="action" value="remove_track"><input type="hidden" name="release_track_id" value="<?=(int)$releaseTrack['id']?>"><button class="nav-link" type="submit">Remove</button></form><?php endif;?>
           </li><?php endforeach;?></ol><?php endif;?>
+          <div class="action-row" style="margin-top:8px">
+            <a class="button secondary-button" href="/album.php?release=<?=(int)$release['id']?>">View Album</a>
+            <?php if($canCatalog):?><a class="button secondary-button" href="/experience-studio.php?owner_type=release&owner_id=<?=(int)$release['id']?>&key=default">Build Experience</a><?php endif;?>
+          </div>
           <?php if($canRelease&&$release['release_status']!=='published'):?>
           <form method="post" style="margin-top:8px"><?=dt_csrf_field()?><input type="hidden" name="artist_id" value="<?=$artistId?>"><input type="hidden" name="action" value="publish_release"><input type="hidden" name="release_id" value="<?=(int)$release['id']?>"><button type="submit">Publish</button></form>
           <?php endif;?>
