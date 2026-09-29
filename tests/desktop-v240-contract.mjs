@@ -40,7 +40,7 @@ assert.doesNotMatch(module,/title:item\.title|label:item\.title/);
 assert.match(adapter,/media\.place-release/);
 assert.match(adapter,/'Place'/);
 assert.match(page,/module-media-objects\.js/);
-const v5=page.match(/'version'=>'music-desktop-v1-section(\\d+)'/);
+const v5=page.match(/'version'=>'music-desktop-v1-section(\d+)'/);
 assert.ok(v5&&Number(v5[1])>=5,'Music Desktop boot version must remain at Section 5 or later.');
 assert.match(bootstrap,/desktop-media-v240\.php/);
 assert.match(css,/media-object-sleeve/);
