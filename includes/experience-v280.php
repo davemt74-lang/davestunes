@@ -435,18 +435,57 @@ function dt_experience_clone_draft(PDO $pdo,int $experienceId,array $user): arra
     return dt_experience_version_row($pdo,$newId)??[];
 }
 
-function dt_experience_active(PDO $pdo,string $ownerType,int $ownerId,string $key='default'): ?array
+function dt_experience_published(PDO $pdo,string $ownerType,int $ownerId,string $key='default',?int $versionNumber=null): ?array
 {
-    $ownerType=dt_experience_owner($ownerType);$key=dt_experience_key($key);
-    $stmt=$pdo->prepare("SELECT e.*,v.manifest_json,v.manifest_sha256,v.version_number
-        FROM experiences_v280 e INNER JOIN experience_versions_v280 v ON v.id=e.active_version_id AND v.version_status='published'
-        WHERE e.owner_type=? AND e.owner_id=? AND e.experience_key=? LIMIT 1");
-    $stmt->execute([$ownerType,$ownerId,$key]);
+    $ownerType=dt_experience_owner($ownerType);
+    $key=dt_experience_key($key);
+    $sql="SELECT e.id experience_id,e.experience_key,e.owner_type,e.owner_id,
+                 v.id version_id,v.manifest_json,v.manifest_sha256,v.version_number,v.published_at
+          FROM experiences_v280 e
+          INNER JOIN experience_versions_v280 v ON v.experience_id=e.id AND v.version_status='published'
+          WHERE e.owner_type=? AND e.owner_id=? AND e.experience_key=?";
+    $params=[$ownerType,$ownerId,$key];
+    if($versionNumber!==null){
+        if($versionNumber<1)return null;
+        $sql.=" AND v.version_number=?";
+        $params[]=$versionNumber;
+    }else{
+        $sql.=" AND v.id=e.active_version_id";
+    }
+    $sql.=" LIMIT 1";
+    $stmt=$pdo->prepare($sql);
+    $stmt->execute($params);
     $row=$stmt->fetch();
-    if(!$row||empty($row['manifest_json']))return null;
+    if(!$row||empty($row['manifest_json'])||empty($row['manifest_sha256']))return null;
     $manifest=json_decode((string)$row['manifest_json'],true);
     if(!is_array($manifest))return null;
-    return ['manifest'=>$manifest,'sha256'=>(string)$row['manifest_sha256'],'versionNumber'=>(int)$row['version_number']];
+    return [
+        'experienceId'=>(int)$row['experience_id'],
+        'versionId'=>(int)$row['version_id'],
+        'versionNumber'=>(int)$row['version_number'],
+        'manifest'=>$manifest,
+        'sha256'=>(string)$row['manifest_sha256'],
+        'publishedAt'=>$row['published_at']!==null?(string)$row['published_at']:null,
+    ];
+}
+
+function dt_experience_active(PDO $pdo,string $ownerType,int $ownerId,string $key='default'): ?array
+{
+    return dt_experience_published($pdo,$ownerType,$ownerId,$key,null);
+}
+
+function dt_experience_delivery_url(string $ownerType,int $ownerId,string $key,int $versionNumber,string $sha256): string
+{
+    $ownerType=dt_experience_owner($ownerType);
+    $key=dt_experience_key($key);
+    if($ownerId<1||$versionNumber<1||!preg_match('/^[a-f0-9]{64}$/',$sha256))throw new RuntimeException('Experience delivery identity is invalid.');
+    return '/experience-delivery.php?'.http_build_query([
+        'owner_type'=>$ownerType,
+        'owner_id'=>$ownerId,
+        'key'=>$key,
+        'version'=>$versionNumber,
+        'hash'=>$sha256,
+    ],'', '&', PHP_QUERY_RFC3986);
 }
 
 function dt_experience_public_allowed(PDO $pdo,string $ownerType,int $ownerId,?array $user): bool

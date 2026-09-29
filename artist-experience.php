@@ -9,11 +9,13 @@ if(!$artist||(string)$artist['artist_status']!=='active'){http_response_code(404
 $active=dt_experience_active($pdo,'artist',$artistId,'default');
 if(!$active){header('Location: /artist.php?artist='.rawurlencode((string)$artist['slug']));exit;}
 $boot=[
-  'version'=>'music-desktop-v1-section13',
+  'version'=>'music-desktop-v1-section15',
+  'source'=>'artist-experience',
   'artistId'=>$artistId,
   'artistName'=>(string)$artist['name'],
-  'manifest'=>$active['manifest']??null,
-  'sha256'=>$active['sha256']??'',
+  'versionNumber'=>(int)$active['versionNumber'],
+  'sha256'=>(string)$active['sha256'],
+  'deliveryUrl'=>dt_experience_delivery_url('artist',$artistId,'default',(int)$active['versionNumber'],(string)$active['sha256']),
 ];
 $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?:'{}';
 ?><!doctype html>
@@ -26,7 +28,7 @@ $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_H
 </head>
 <body class="desktop-page artist-experience-page">
 <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop">
-  <script type="application/json" id="dt-artist-experience-boot"><?=$bootJson?></script>
+  <script type="application/json" id="dt-public-experience-boot"><?=$bootJson?></script>
   <div class="desktop-topbar">
     <a class="desktop-brand" href="/artist.php?artist=<?=rawurlencode((string)$artist['slug'])?>"><span class="desktop-brand-mark"></span><?=dt_e((string)$artist['name'])?></a>
     <div class="desktop-actions"><a class="desktop-chip" href="/artist.php?artist=<?=rawurlencode((string)$artist['slug'])?>">Exit Experience</a></div>
@@ -48,6 +50,6 @@ $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_H
 <script src="/assets/desktop/experience-effects.js"></script>
 <script src="/assets/desktop/module-experience-runtime.js"></script>
 <script src="/assets/desktop/module-z-scroll.js"></script>
-<script src="/assets/artist-experience.js"></script>
+<script src="/assets/public-experience.js"></script>
 </body>
 </html>
