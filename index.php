@@ -75,8 +75,11 @@ $news=dt_featured_public_news($pdo,5);
             <?php if(!$news):?><p class="muted">Dave's Tunes updates will appear here.</p><?php endif;?>
             <?php foreach($news as $item):?>
               <a class="public-news-item" href="<?=dt_e((string)$item['url'])?>">
-                <div><strong><?=dt_e((string)$item['headline'])?></strong><br><span><?=dt_e((string)$item['body'])?></span></div>
-                <span>Open →</span>
+                <div>
+                  <strong><?=dt_e((string)$item['headline'])?></strong><br>
+                  <span><?=dt_e((string)$item['body'])?></span>
+                </div>
+                <span><?=dt_e((string)($item['linkLabel']??'Open'))?> →</span>
               </a>
             <?php endforeach;?>
           </div>
