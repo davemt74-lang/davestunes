@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section3',
+    'version'=>'music-desktop-v1-section4',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -15,7 +15,7 @@ $boot=[
         'dataAdapter'=>true,
         'objects'=>true,
         'turntable'=>false,
-        'zScroll'=>false,
+        'zScroll'=>true,
         'flowBuilder'=>false,
     ],
 ];
@@ -38,6 +38,7 @@ if($bootJson===false)$bootJson='{}';
     <div class="desktop-topbar">
       <a class="desktop-brand" href="/desktop.php"><span class="desktop-brand-mark" aria-hidden="true"></span>Dave's Tunes</a>
       <div class="desktop-actions">
+        <button class="desktop-chip" data-zscroll-toggle type="button" aria-pressed="false">Explore</button>
         <a class="desktop-chip" href="/library.php">Library</a>
         <button class="desktop-chip" data-desktop-reset type="button">Reset Desktop</button>
         <a class="desktop-chip" href="/dashboard.php">Account</a>
@@ -78,8 +79,17 @@ if($bootJson===false)$bootJson='{}';
     </section>
 
     <section class="desktop-layer desktop-layer-zscroll" data-desktop-layer="z-scroll" aria-hidden="true">
-      <div class="z-scroll-stage">
-        <div class="z-scroll-stage-inner"><strong>Z-Scroll Scene Layer</strong><p>Reserved for the modular scene/effect runtime.</p></div>
+      <div class="z-scroll-stage" data-zscroll-stage aria-hidden="true">
+        <div class="z-scroll-stage-bar">
+          <div>
+            <span class="z-scroll-kicker">Explore mode</span>
+            <span class="z-scroll-instruction">Hold Z + scroll · or use Explore</span>
+          </div>
+          <button class="z-scroll-close" data-zscroll-close type="button">Close</button>
+        </div>
+        <div class="z-scroll-scenes" data-zscroll-scenes></div>
+        <div class="z-scroll-progress" aria-hidden="true"><span data-zscroll-progress-fill></span></div>
+        <nav class="z-scroll-markers" data-zscroll-markers aria-label="Explore scenes"></nav>
       </div>
     </section>
 
@@ -95,5 +105,7 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/module-player-bridge.js"></script>
   <script src="/assets/desktop/module-library-adapter.js"></script>
   <script src="/assets/desktop/module-object-runtime.js"></script>
+  <script src="/assets/desktop/z-scroll-effects.js"></script>
+  <script src="/assets/desktop/module-z-scroll.js"></script>
 </body>
 </html>
