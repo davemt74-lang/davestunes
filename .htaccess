@@ -1,0 +1,8 @@
+Options -Indexes
+
+<FilesMatch "^(config\.php|config\.example\.php|migrate\.php)$">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^(?:includes|tests|\.github)/ - [F,L]
