@@ -30,7 +30,7 @@ if(!str_contains($delivery,'experience-delivery-v340'))throw new RuntimeExceptio
 if(!str_contains($delivery,'max-age=31536000, immutable'))throw new RuntimeException('Immutable cache policy is missing.');
 if(!str_contains($delivery,"header('ETag: '"))throw new RuntimeException('Delivery ETag is missing.');
 if(!str_contains($delivery,'HTTP_IF_NONE_MATCH'))throw new RuntimeException('Conditional 304 handling is missing.');
-if(!str_contains($delivery,"hash_equals((string)$published['sha256'],$expectedHash)"))throw new RuntimeException('Pinned hash verification is missing.');
+if(!str_contains($delivery,'hash_equals((string)$published[\'sha256\'],$expectedHash)'))throw new RuntimeException('Pinned hash verification is missing.');
 if(!str_contains($delivery,"header_remove('Set-Cookie')"))throw new RuntimeException('Public immutable delivery must strip session cookies.');
 if(!str_contains($delivery,'Cross-Origin-Resource-Policy: same-origin'))throw new RuntimeException('Delivery CORP header is missing.');
 
