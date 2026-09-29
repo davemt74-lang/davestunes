@@ -10,6 +10,7 @@ const endpoint=read('desktop-media.php');
 const desktop=read('desktop.php');
 const workflow=read('.github/workflows/foundation-v1.yml');
 
+assert.match(desktop,/'version'=>'music-desktop-v1-section14'/);
 assert.match(desktop,/'collectionIntegration'=>true/);
 
 for(const token of [
