@@ -427,8 +427,8 @@ function dt_experience_clone_draft(PDO $pdo,int $experienceId,array $user): arra
             $layers=$pdo->prepare('SELECT * FROM experience_layers_v280 WHERE scene_id=? ORDER BY id');$layers->execute([(int)$scene['id']]);
             foreach($layers->fetchAll()?:[] as $layer)$pdo->prepare('INSERT INTO experience_layers_v280 (scene_id,layer_key,layer_type,sort_order,settings_json) VALUES (?,?,?,?,?)')->execute([$newSceneId,$layer['layer_key'],$layer['layer_type'],$layer['sort_order'],$layer['settings_json']]);
         }
-        $pdo->prepare('INSERT INTO experience_flow_nodes_v280 (version_id,node_key,node_type,scene_key,position_x,position_y,settings_json) SELECT ?,node_key,node_type,scene_key,position_x,position_y,settings_json FROM experience_flow_nodes_v280 WHERE version_id=?')->execute([$newId,$sourceId]);
-        $pdo->prepare('INSERT INTO experience_flow_edges_v280 (version_id,edge_key,from_node_key,from_port,to_node_key,to_port,condition_json) SELECT ?,edge_key,from_node_key,from_port,to_node_key,to_port,condition_json FROM experience_flow_edges_v280 WHERE version_id=?')->execute([$newId,$sourceId]);
+        $pdo->prepare('INSERT INTO experience_flow_nodes_v280 (version_id,node_key,node_type,scene_key,position_x,position_y,settings_json) SELECT ?,node_key,node_type,scene_key,position_x,position_y,settings_json FROM experience_flow_nodes_v280 WHERE version_id=? ORDER BY id')->execute([$newId,$sourceId]);
+        $pdo->prepare('INSERT INTO experience_flow_edges_v280 (version_id,edge_key,from_node_key,from_port,to_node_key,to_port,condition_json) SELECT ?,edge_key,from_node_key,from_port,to_node_key,to_port,condition_json FROM experience_flow_edges_v280 WHERE version_id=? ORDER BY id')->execute([$newId,$sourceId]);
         dt_experience_event($pdo,$experienceId,$newId,(int)$user['id'],'experience.draft_created',['from_version_id'=>$sourceId,'version'=>$next]);
         $pdo->commit();
     }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
