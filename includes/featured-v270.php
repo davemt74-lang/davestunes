@@ -131,5 +131,106 @@ function dt_featured_desktop(PDO $pdo,array $user,int $limit=8): array
             'content'=>$content,
         ];
     }
+    if(!$items){
+        foreach(dt_library_published_releases($pdo,$limit) as $release){
+            $releaseId=(int)$release['id'];
+            $items[]=[
+                'id'=>0,
+                'type'=>'release',
+                'headline'=>(string)$release['title'],
+                'body'=>'Featured from '.(string)$release['artist_name'].'.',
+                'content'=>dt_desktop_data_release_dto($pdo,(int)$user['id'],$user,$release,'public',false),
+            ];
+        }
+    }
+    return $items;
+}
+
+
+function dt_featured_active_rows(PDO $pdo,int $limit=10): array
+{
+    $limit=max(1,min(24,$limit));
+    $stmt=$pdo->prepare("SELECT f.*,
+      CASE WHEN f.content_type='release' THEN r.title ELSE rec.title END content_title,
+      a.name artist_name,a.slug artist_slug,
+      CASE WHEN f.content_type='release' THEN r.cover_path ELSE (
+        SELECT rel.cover_path FROM music_release_tracks_v110 rt
+        INNER JOIN music_releases_v110 rel ON rel.id=rt.release_id AND rel.release_status='published'
+        WHERE rt.recording_id=rec.id ORDER BY rel.release_date DESC,rel.id DESC LIMIT 1
+      ) END cover_path
+      FROM featured_posts_v270 f
+      LEFT JOIN music_releases_v110 r ON f.content_type='release' AND r.id=f.content_id AND r.release_status='published'
+      LEFT JOIN music_recordings_v110 rec ON f.content_type='recording' AND rec.id=f.content_id AND rec.recording_status='active'
+      LEFT JOIN artists a ON a.id=COALESCE(r.artist_id,rec.artist_id) AND a.artist_status='active'
+      WHERE f.post_status='active'
+        AND (f.starts_at IS NULL OR f.starts_at<=NOW())
+        AND (f.ends_at IS NULL OR f.ends_at>NOW())
+      ORDER BY f.priority DESC,f.id DESC LIMIT ?");
+    $stmt->bindValue(1,$limit,PDO::PARAM_INT);
+    $stmt->execute();
+    return array_values(array_filter($stmt->fetchAll()?:[],static fn(array $row): bool => !empty($row['content_title'])&&!empty($row['artist_name'])));
+}
+
+function dt_featured_public_albums(PDO $pdo,int $limit=8): array
+{
+    $limit=max(1,min(16,$limit));
+    $items=[];
+    foreach(dt_featured_active_rows($pdo,$limit*2) as $row){
+        if((string)$row['content_type']!=='release')continue;
+        $releaseId=(int)$row['content_id'];
+        $items[]=[
+            'id'=>$releaseId,
+            'title'=>(string)$row['content_title'],
+            'artistName'=>(string)$row['artist_name'],
+            'artistSlug'=>(string)$row['artist_slug'],
+            'coverUrl'=>dt_desktop_data_cover_url((string)($row['cover_path']??'')),
+            'headline'=>(string)$row['headline'],
+            'body'=>(string)$row['body_text'],
+            'albumUrl'=>'/album.php?release='.$releaseId,
+            'experienceUrl'=>dt_experience_active($pdo,'release',$releaseId,'default')?'/album-experience.php?release='.$releaseId:'',
+        ];
+        if(count($items)>=$limit)break;
+    }
+    if($items)return $items;
+
+    foreach(dt_library_published_releases($pdo,$limit) as $release){
+        $releaseId=(int)$release['id'];
+        $items[]=[
+            'id'=>$releaseId,
+            'title'=>(string)$release['title'],
+            'artistName'=>(string)$release['artist_name'],
+            'artistSlug'=>(string)($release['artist_slug']??''),
+            'coverUrl'=>dt_desktop_data_cover_url((string)($release['cover_path']??'')),
+            'headline'=>(string)$release['title'],
+            'body'=>'Featured from '.(string)$release['artist_name'].'.',
+            'albumUrl'=>'/album.php?release='.$releaseId,
+            'experienceUrl'=>dt_experience_active($pdo,'release',$releaseId,'default')?'/album-experience.php?release='.$releaseId:'',
+        ];
+    }
+    return $items;
+}
+
+function dt_featured_public_news(PDO $pdo,int $limit=5): array
+{
+    $limit=max(1,min(10,$limit));
+    $items=[];
+    foreach(dt_featured_active_rows($pdo,$limit) as $row){
+        $headline=trim((string)$row['headline']);
+        $body=trim((string)$row['body_text']);
+        if($headline==='')$headline=(string)$row['content_title'];
+        $items[]=[
+            'headline'=>$headline,
+            'body'=>$body!==''?$body:((string)$row['artist_name'].' · '.(string)$row['content_title']),
+            'url'=>(string)$row['content_type']==='release'?'/album.php?release='.(int)$row['content_id']:'/artist.php?artist='.rawurlencode((string)$row['artist_slug']),
+        ];
+    }
+    if($items)return $items;
+    foreach(array_slice(dt_library_published_releases($pdo,10),0,$limit) as $release){
+        $items[]=[
+            'headline'=>'New release · '.(string)$release['title'],
+            'body'=>(string)$release['artist_name'],
+            'url'=>'/album.php?release='.(int)$release['id'],
+        ];
+    }
     return $items;
 }
