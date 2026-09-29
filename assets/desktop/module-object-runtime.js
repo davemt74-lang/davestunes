@@ -82,7 +82,10 @@
       id: String(object.id),
       expected_revision: String(object.revision)
     };
-    for (const [key, value] of Object.entries(changes)) fields[key] = typeof value === 'boolean' ? (value ? '1' : '0') : String(value);
+    for (const [key, value] of Object.entries(changes)) {
+      if (key === 'payload') fields[key] = JSON.stringify(value ?? {});
+      else fields[key] = typeof value === 'boolean' ? (value ? '1' : '0') : String(value);
+    }
     try {
       const result = await api(fields);
       objects.set(result.object.id, result.object);
