@@ -5,21 +5,23 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $artistParam=trim((string)($_GET['artist']??''));
 $artist=$artistParam!==''?(ctype_digit($artistParam)?dt_artist_by_id($pdo,(int)$artistParam):dt_artist_by_slug($pdo,$artistParam)):null;
-if(!$artist||(string)$artist['artist_status']==='archived'){http_response_code(404);exit('Artist not found.');}
+if(!$artist){http_response_code(404);exit('Artist not found.');}
 
 $user=dt_current_user($pdo);
 $canEdit=$user?dt_artist_can($pdo,(int)$artist['id'],(int)$user['id'],'catalog'):false;
+if((string)$artist['artist_status']!=='active'&&!$canEdit){http_response_code(404);exit('Artist not found.');}
 $releases=dt_catalog_releases($pdo,(int)$artist['id']);
 $published=array_values(array_filter($releases,static fn(array $r): bool => (string)$r['release_status']==='published'));
 $experience=dt_experience_active($pdo,'artist',(int)$artist['id'],'default');
-$hasExperience=is_array($experience);
+$hasExperience=(string)$artist['artist_status']==='active'&&is_array($experience);
 
 dt_page_header((string)$artist['name']);
 ?>
 <main class="shell artist-desktop-shell">
   <section class="artist-desktop-hero">
     <div class="artist-desktop-avatar">
-      <?php if((string)$artist['profile_image_path']!==''):?><img src="<?=dt_e((string)$artist['profile_image_path'])?>" alt=""><?php else:?><?=dt_e(mb_strtoupper(mb_substr((string)$artist['name'],0,1)))?><?php endif;?>
+      <?php $profileImage=dt_artist_public_image((string)$artist['profile_image_path']); ?>
+      <?php if($profileImage!==''):?><img src="<?=dt_e($profileImage)?>" alt=""><?php else:?><?=dt_e(mb_strtoupper(mb_substr((string)$artist['name'],0,1)))?><?php endif;?>
     </div>
     <div class="artist-desktop-copy">
       <div class="eyebrow">Artist Desktop</div>
@@ -32,7 +34,8 @@ dt_page_header((string)$artist['name']);
       </div>
       <div class="artist-desktop-links">
         <?php foreach(['website_url'=>'Website','instagram_url'=>'Instagram','tiktok_url'=>'TikTok','youtube_url'=>'YouTube','spotify_url'=>'Spotify','apple_music_url'=>'Apple Music'] as $field=>$label):?>
-          <?php if((string)$artist[$field]!==''):?><a href="<?=dt_e((string)$artist[$field])?>" rel="noopener noreferrer" target="_blank"><?=dt_e($label)?></a><?php endif;?>
+          <?php $publicUrl=dt_artist_public_url((string)$artist[$field]); ?>
+          <?php if($publicUrl!==''):?><a href="<?=dt_e($publicUrl)?>" rel="noopener noreferrer" target="_blank"><?=dt_e($label)?></a><?php endif;?>
         <?php endforeach;?>
       </div>
     </div>
