@@ -128,6 +128,20 @@ function dt_desktop_data_release_dto(PDO $pdo,int $userId,array $user,array $rel
 
 function dt_desktop_data_release_map(PDO $pdo,int $userId,array $user,bool $includeDiscover=false): array
 {
+    static $cache=[];
+    $cacheKey=$userId.':'.($includeDiscover?'discover':'library');
+    if(isset($cache[$cacheKey]))return $cache[$cacheKey];
+
+    if($includeDiscover){
+        $map=dt_desktop_data_release_map($pdo,$userId,$user,false);
+        foreach(dt_library_published_releases($pdo,80) as $release){
+            $id=(int)$release['id'];
+            if(isset($map[$id]))continue;
+            $map[$id]=dt_desktop_data_release_dto($pdo,$userId,$user,$release,'public',false);
+        }
+        return $cache[$cacheKey]=$map;
+    }
+
     $savedIds=dt_desktop_data_saved_release_ids($pdo,$userId);
     $map=[];
 
@@ -149,14 +163,7 @@ function dt_desktop_data_release_map(PDO $pdo,int $userId,array $user,bool $incl
         $map[$id]=dt_desktop_data_release_dto($pdo,$userId,$user,$release,'saved',true);
     }
 
-    if($includeDiscover){
-        foreach(dt_library_published_releases($pdo,80) as $release){
-            $id=(int)$release['id'];
-            if(isset($map[$id]))continue;
-            $map[$id]=dt_desktop_data_release_dto($pdo,$userId,$user,$release,'public',false);
-        }
-    }
-    return $map;
+    return $cache[$cacheKey]=$map;
 }
 
 function dt_desktop_data_albums(PDO $pdo,int $userId,array $user,string $query='',bool $includeDiscover=false,int $limit=120): array
@@ -213,8 +220,11 @@ function dt_desktop_data_direct_access_recordings(PDO $pdo,int $userId): array
     return $stmt->fetchAll()?:[];
 }
 
-function dt_desktop_data_songs(PDO $pdo,int $userId,array $user,string $query='',int $limit=200): array
+function dt_desktop_data_song_map(PDO $pdo,int $userId,array $user): array
 {
+    static $cache=[];
+    if(isset($cache[$userId]))return $cache[$userId];
+
     $savedIds=dt_desktop_data_saved_recording_ids($pdo,$userId);
     $map=[];
 
@@ -258,7 +268,12 @@ function dt_desktop_data_songs(PDO $pdo,int $userId,array $user,string $query=''
         $map[$id]=dt_desktop_data_song_dto($pdo,$userId,$user,$recording,'saved',true);
     }
 
-    $items=array_values(array_filter($map,static fn(array $item): bool =>
+    return $cache[$userId]=$map;
+}
+
+function dt_desktop_data_songs(PDO $pdo,int $userId,array $user,string $query='',int $limit=200): array
+{
+    $items=array_values(array_filter(dt_desktop_data_song_map($pdo,$userId,$user),static fn(array $item): bool =>
         dt_desktop_data_matches($query,(string)$item['title'],(string)$item['artist']['name'],(string)$item['versionLabel'])
     ));
     usort($items,static fn(array $a,array $b): int => strcasecmp((string)$a['title'],(string)$b['title']));
@@ -270,7 +285,7 @@ function dt_desktop_data_artists(PDO $pdo,int $userId,array $user,string $query=
     $followed=dt_desktop_data_followed_artist_ids($pdo,$userId);
     $artistIds=$followed;
     foreach(dt_desktop_data_release_map($pdo,$userId,$user,false) as $release)$artistIds[(int)$release['artist']['id']]=true;
-    foreach(dt_desktop_data_songs($pdo,$userId,$user,'',300) as $song)$artistIds[(int)$song['artist']['id']]=true;
+    foreach(dt_desktop_data_song_map($pdo,$userId,$user) as $song)$artistIds[(int)$song['artist']['id']]=true;
     if(!$artistIds)return [];
 
     $ids=array_keys($artistIds);
@@ -302,8 +317,7 @@ function dt_desktop_data_crates(PDO $pdo,int $userId,array $user,string $query='
 {
     $crates=dt_library_crates($pdo,$userId);
     $releaseMap=dt_desktop_data_release_map($pdo,$userId,$user,false);
-    $songMap=[];
-    foreach(dt_desktop_data_songs($pdo,$userId,$user,'',300) as $song)$songMap[(int)$song['id']]=$song;
+    $songMap=dt_desktop_data_song_map($pdo,$userId,$user);
     $items=[];
     foreach($crates as $crate){
         if(!dt_desktop_data_matches($query,(string)$crate['crate_name']))continue;
@@ -346,8 +360,7 @@ function dt_desktop_data_crates(PDO $pdo,int $userId,array $user,string $query='
 
 function dt_desktop_data_playlists(PDO $pdo,int $userId,array $user,string $query='',int $limit=100): array
 {
-    $songMap=[];
-    foreach(dt_desktop_data_songs($pdo,$userId,$user,'',300) as $song)$songMap[(int)$song['id']]=$song;
+    $songMap=dt_desktop_data_song_map($pdo,$userId,$user);
     $stmt=$pdo->prepare("SELECT p.*,(SELECT COUNT(*) FROM music_playlist_recordings_v120 pr WHERE pr.playlist_id=p.id) item_count
         FROM music_playlists_v120 p WHERE p.user_id=? ORDER BY p.updated_at DESC,p.id DESC");
     $stmt->execute([$userId]);
@@ -408,9 +421,15 @@ function dt_desktop_data_home(PDO $pdo,int $userId,array $user,string $query='')
 {
     $libraryMap=dt_desktop_data_release_map($pdo,$userId,$user,false);
     $libraryAlbums=dt_desktop_data_albums($pdo,$userId,$user,$query,false,24);
-    $discoverAll=dt_desktop_data_albums($pdo,$userId,$user,$query,true,80);
     $libraryIds=array_fill_keys(array_map('intval',array_keys($libraryMap)),true);
-    $discover=array_values(array_filter($discoverAll,static fn(array $item): bool => $item['accessState']==='public'&&!isset($libraryIds[(int)$item['id']])));
+    $discover=[];
+    foreach(dt_library_published_releases($pdo,60) as $release){
+        $id=(int)$release['id'];
+        if(isset($libraryIds[$id]))continue;
+        if(!dt_desktop_data_matches($query,(string)$release['title'],(string)$release['artist_name'],(string)$release['release_type']))continue;
+        $discover[]=dt_desktop_data_release_dto($pdo,$userId,$user,$release,'public',false);
+        if(count($discover)>=12)break;
+    }
     return [
         'hero'=>$libraryAlbums[0]??$discover[0]??null,
         'sections'=>[
