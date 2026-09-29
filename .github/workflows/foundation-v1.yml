@@ -52,6 +52,8 @@ jobs:
           node --check assets/desktop/module-player-bridge.js
           node --check assets/desktop/module-library-adapter.js
           node --check assets/desktop/module-object-runtime.js
+          node --check assets/desktop/z-scroll-effects.js
+          node --check assets/desktop/module-z-scroll.js
 
       - name: Foundation architecture contract
         run: php tests/foundation-v1-contract.php
@@ -70,6 +72,9 @@ jobs:
 
       - name: Music Desktop V1 Section 3 object contract
         run: node tests/desktop-v220-contract.mjs
+
+      - name: Music Desktop V1 Section 4 Z-Scroll contract
+        run: node tests/desktop-v230-contract.mjs
 
       - name: Foundation MySQL integration
         env:
