@@ -13,4 +13,9 @@ return [
         'user' => getenv('DAVESTUNES_DB_USER') ?: '',
         'pass' => getenv('DAVESTUNES_DB_PASS') ?: '',
     ],
+    'storage' => [
+        // Keep protected masters outside the public document root.
+        'media_root' => getenv('DAVESTUNES_MEDIA_ROOT') ?: dirname(__DIR__).'/davestunes-media',
+        'max_upload_bytes' => (int)(getenv('DAVESTUNES_MAX_AUDIO_BYTES') ?: 536870912),
+    ],
 ];
