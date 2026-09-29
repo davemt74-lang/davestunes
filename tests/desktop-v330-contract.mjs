@@ -10,7 +10,8 @@ const endpoint=read('desktop-media.php');
 const desktop=read('desktop.php');
 const workflow=read('.github/workflows/foundation-v1.yml');
 
-assert.match(desktop,/'version'=>'music-desktop-v1-section14'/);
+const version=desktop.match(/'version'=>'music-desktop-v1-section(\d+)'/);
+assert.ok(version&&Number(version[1])>=14,'Music Desktop runtime version must remain Section 14 compatible.');
 assert.match(desktop,/'collectionIntegration'=>true/);
 
 for(const token of [
