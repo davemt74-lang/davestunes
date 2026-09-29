@@ -130,7 +130,7 @@ function dt_experience_create(PDO $pdo,array $user,string $ownerType,int $ownerI
 
 function dt_experience_scene_add(PDO $pdo,int $versionId,array $user,array $input): array
 {
-    [$experience]=$unused=dt_experience_require_draft($pdo,$versionId,$user);
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
     $key=dt_experience_key((string)($input['scene_key']??''));
     $title=trim((string)($input['title']??''));
     if($title===''||mb_strlen($title)>190)throw new RuntimeException('Scene title is required.');
