@@ -218,6 +218,33 @@ function dt_catalog_add_recording_to_release(PDO $pdo,int $artistId,int $release
     return $id;
 }
 
+function dt_catalog_release_track(PDO $pdo,int $artistId,int $releaseTrackId): ?array
+{
+    if($artistId<1||$releaseTrackId<1)return null;
+    $stmt=$pdo->prepare("SELECT rt.*,r.artist_id,r.release_status
+        FROM music_release_tracks_v110 rt
+        INNER JOIN music_releases_v110 r ON r.id=rt.release_id
+        WHERE rt.id=? AND r.artist_id=? LIMIT 1");
+    $stmt->execute([$releaseTrackId,$artistId]);
+    $row=$stmt->fetch();
+    return is_array($row)?$row:null;
+}
+
+function dt_catalog_remove_release_track(PDO $pdo,int $artistId,int $releaseTrackId,array $user): void
+{
+    dt_catalog_require_artist($pdo,$artistId,$user,'catalog');
+    $row=dt_catalog_release_track($pdo,$artistId,$releaseTrackId);
+    if(!$row)throw new RuntimeException('Release track was not found.');
+    if((string)$row['release_status']==='archived')throw new RuntimeException('Archived releases cannot be edited.');
+    $pdo->prepare('DELETE FROM music_release_tracks_v110 WHERE id=?')->execute([$releaseTrackId]);
+    dt_catalog_event($pdo,$artistId,'release_track',$releaseTrackId,'release.track_removed',(int)$user['id'],[
+        'release_id'=>(int)$row['release_id'],
+        'recording_id'=>(int)$row['recording_id'],
+        'disc_number'=>(int)$row['disc_number'],
+        'track_number'=>(int)$row['track_number'],
+    ]);
+}
+
 function dt_catalog_edition_code(string $value): string
 {
     $value=dt_catalog_slug($value);
