@@ -1,0 +1,51 @@
+name: Package Soft Launch RC2
+
+on:
+  push:
+    branches:
+      - ops/package-soft-launch-rc2
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact RC2 baseline
+        uses: actions/checkout@v4
+        with:
+          ref: 4cf3bc4eaba0030a295adb723e2a6289263f0987
+          fetch-depth: 1
+
+      - name: Build deploy package
+        run: |
+          set -euo pipefail
+          rm -rf deploy
+          mkdir deploy
+          rsync -a ./ deploy/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'tests' \
+            --exclude '.gitignore'
+          cat > deploy/DEPLOY_INFO.txt <<'EOF'
+          Dave's Tunes
+          Release: Soft Launch RC2
+          Version: 1.0.0-rc2
+          Commit: 4cf3bc4eaba0030a295adb723e2a6289263f0987
+          Install: upload/extract, then open /install.php for a fresh install.
+          EOF
+          cd deploy
+          zip -r ../davestunes-soft-launch-rc2-deploy.zip .
+          cd ..
+          sha256sum davestunes-soft-launch-rc2-deploy.zip > davestunes-soft-launch-rc2-deploy.zip.sha256
+
+      - name: Upload deploy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: davestunes-soft-launch-rc2-deploy
+          path: |
+            davestunes-soft-launch-rc2-deploy.zip
+            davestunes-soft-launch-rc2-deploy.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
