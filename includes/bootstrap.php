@@ -17,6 +17,7 @@ require_once __DIR__.'/library-v120.php';
 require_once __DIR__.'/playback-v130.php';
 require_once __DIR__.'/desktop-data-v210.php';
 require_once __DIR__.'/desktop-objects-v220.php';
+require_once __DIR__.'/desktop-media-v240.php';
 require_once __DIR__.'/view.php';
 
 dt_session_boot();
