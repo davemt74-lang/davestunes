@@ -49,6 +49,10 @@ dt_catalog_add_recording_to_release($pdo,$artistId,(int)$single['id'],$recording
 $recordingCount=(int)$pdo->query('SELECT COUNT(*) FROM music_recordings_v110')->fetchColumn();
 $appearanceCount=(int)$pdo->query('SELECT COUNT(*) FROM music_release_tracks_v110')->fetchColumn();
 if($recordingCount!==1||$appearanceCount!==2)throw new RuntimeException('Canonical recording was duplicated across releases.');
+$singleTracks=dt_catalog_release_tracks($pdo,$artistId,(int)$single['id']);
+dt_catalog_remove_release_track($pdo,$artistId,(int)$singleTracks[0]['id'],$manager);
+if((int)$pdo->query('SELECT COUNT(*) FROM music_recordings_v110')->fetchColumn()!==1)throw new RuntimeException('Removing a release appearance deleted the canonical recording.');
+if((int)$pdo->query('SELECT COUNT(*) FROM music_release_tracks_v110')->fetchColumn()!==1)throw new RuntimeException('Release appearance correction failed.');
 
 try{
     dt_catalog_create_recording($pdo,$artistId,$manager,['title'=>'Duplicate ISRC','isrc'=>'USABC2612345']);
