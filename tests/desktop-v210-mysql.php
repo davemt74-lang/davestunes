@@ -55,9 +55,11 @@ function add_media(PDO $pdo,array $owner,int $artistId,array $recording,string $
 [$ownedSong,$ownedRelease]=make_release($pdo,$owner,$artistId,'Blue Room','USDTA2612345',true);
 [$savedSong,$savedRelease]=make_release($pdo,$owner,$artistId,'Open Window','USDTA2612346',true);
 [$privateSong,$privateRelease]=make_release($pdo,$owner,$artistId,'Secret Dawn','USDTA2612347',false);
+$directSong=dt_catalog_create_recording($pdo,$artistId,$owner,['title'=>'Direct Signal','isrc'=>'USDTA2612348','duration_ms'=>150000]);
 add_media($pdo,$owner,$artistId,$ownedSong,$mediaRoot,'full');
 add_media($pdo,$owner,$artistId,$savedSong,$mediaRoot,'preview');
 add_media($pdo,$owner,$artistId,$privateSong,$mediaRoot,'full');
+add_media($pdo,$owner,$artistId,$directSong,$mediaRoot,'full');
 
 dt_entitlement_grant($pdo,[
  'grant_key'=>'purchase:blue','user_id'=>(int)$listener['id'],'resource_type'=>'release',
@@ -67,8 +69,11 @@ dt_entitlement_grant($pdo,[
  'grant_key'=>'promotion:secret','user_id'=>(int)$listener['id'],'resource_type'=>'release',
  'resource_id'=>(int)$privateRelease['id'],'entitlement_type'=>'access','source_type'=>'promotion','source_ref'=>'invite-secret'
 ]);
+dt_entitlement_grant($pdo,[
+ 'grant_key'=>'promotion:direct-signal','user_id'=>(int)$listener['id'],'resource_type'=>'recording',
+ 'resource_id'=>(int)$directSong['id'],'entitlement_type'=>'access','source_type'=>'promotion','source_ref'=>'direct-signal'
+]);
 dt_library_save_release($pdo,(int)$listener['id'],(int)$savedRelease['id']);
-dt_library_save_recording($pdo,(int)$listener['id'],(int)$savedSong['id']);
 dt_library_follow_artist($pdo,(int)$listener['id'],$artistId);
 
 $crate=dt_library_create_crate($pdo,(int)$listener['id'],'Night Shelf');
@@ -90,7 +95,11 @@ if(count(dt_desktop_data_payload($pdo,$other,'albums','secret')['data']['items']
 
 $songs=dt_desktop_data_payload($pdo,$listener,'songs','');
 $titles=array_column($songs['data']['items'],'title');
-foreach(['Blue Room','Open Window','Secret Dawn'] as $title)if(!in_array($title,$titles,true))throw new RuntimeException('Song adapter missed '.$title);
+foreach(['Blue Room','Open Window','Secret Dawn','Direct Signal'] as $title)if(!in_array($title,$titles,true))throw new RuntimeException('Song adapter missed '.$title);
+$savedRows=array_values(array_filter($songs['data']['items'],fn($x)=>$x['title']==='Open Window'));
+if(!$savedRows||$savedRows[0]['accessState']!=='saved')throw new RuntimeException('Saved album did not project its track into Songs.');
+$directRows=array_values(array_filter($songs['data']['items'],fn($x)=>$x['title']==='Direct Signal'));
+if(!$directRows||$directRows[0]['accessState']!=='available'||!$directRows[0]['playable'])throw new RuntimeException('Direct recording entitlement did not project into Songs.');
 $privateRows=array_values(array_filter($songs['data']['items'],fn($x)=>$x['title']==='Secret Dawn'));
 if(!$privateRows||!$privateRows[0]['playable']||$privateRows[0]['accessMode']!=='full')throw new RuntimeException('Private playable access was not preserved.');
 
