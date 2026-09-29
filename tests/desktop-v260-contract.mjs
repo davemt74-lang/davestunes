@@ -6,6 +6,10 @@ const page=read('desktop.php');
 const core=read('assets/desktop/desktop-core.js');
 const bridge=read('assets/desktop/module-player-bridge.js');
 const turntable=read('assets/desktop/module-turntable.js');
+const zEffects=read('assets/desktop/z-scroll-effects.js');
+const zRuntime=read('assets/desktop/module-z-scroll.js');
+const mediaObjects=read('assets/desktop/module-media-objects.js');
+const libraryAdapter=read('assets/desktop/module-library-adapter.js');
 const player=read('assets/player.js');
 const workflow=read('.github/workflows/foundation-v1.yml');
 
@@ -34,6 +38,8 @@ assert.match(bridge,/progress/);
 assert.match(bridge,/volume/);
 assert.match(bridge,/canPrevious/);
 assert.match(bridge,/canNext/);
+assert.match(bridge,/canonicalSource/);
+assert.match(bridge,/source:Object\.freeze/);
 assert.match(bridge,/Object\.freeze/);
 
 assert.match(player,/const schedulePersist =/);
@@ -42,6 +48,9 @@ assert.match(player,/emit\('seek'/);
 assert.match(player,/emit\('volume'/);
 assert.match(player,/seek,/);
 assert.match(player,/setVolume,/);
+assert.match(player,/source: \{ type: '', id: null \}/);
+assert.match(player,/last_source_type/);
+assert.match(player,/options\.sourceType !== 'resume'/);
 assert.equal((player.match(/new Audio\s*\(/g)||[]).length,1,'Canonical player must remain the only Audio owner.');
 
 assert.match(turntable,/desktop\.runCommand\('player\.toggle'/);
@@ -50,6 +59,20 @@ assert.match(turntable,/desktop\.runCommand\('player\.next'/);
 assert.match(turntable,/desktop\.runCommand\('player\.seek-fraction'/);
 assert.doesNotMatch(turntable,/window\.DaveTunesPlayer/);
 assert.doesNotMatch(turntable,/new Audio\s*\(/);
+
+for (const [name,source] of [
+  ['turntable',turntable],
+  ['Z-Scroll effects',zEffects],
+  ['Z-Scroll runtime',zRuntime],
+  ['media objects',mediaObjects],
+  ['library adapter',libraryAdapter]
+]) {
+  assert.doesNotMatch(source,/window\.DaveTunesPlayer/,name+' must use the unified Desktop player facade.');
+  assert.doesNotMatch(source,/new Audio\s*\(/,name+' must not own audio.');
+}
+assert.match(zEffects,/ctx\.playerSnapshot/);
+assert.match(zEffects,/player\.toggle/);
+assert.match(zRuntime,/davestunes:desktop:player-snapshot/);
 
 assert.match(workflow,/node tests\/desktop-v260-contract\.mjs/);
 
