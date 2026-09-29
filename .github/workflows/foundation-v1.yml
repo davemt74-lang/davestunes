@@ -60,8 +60,7 @@ jobs:
           node --check assets/desktop/experience-effects.js
           node --check assets/desktop/module-experience-runtime.js
           node --check assets/experience-studio.js
-          node --check assets/album-experience.js
-          node --check assets/artist-experience.js
+          node --check assets/public-experience.js
 
       - name: Foundation installer contract
         run: php tests/installer-v101-contract.php
@@ -116,6 +115,9 @@ jobs:
 
       - name: Music Desktop V1 Section 14 User Desktop Collection Integration contract
         run: node tests/desktop-v330-contract.mjs
+
+      - name: Music Desktop V1 Section 15 Experience Publishing & Delivery contract
+        run: php tests/desktop-v340-contract.php
 
       - name: Foundation MySQL integration
         env:
@@ -228,6 +230,15 @@ jobs:
           DAVESTUNES_APP_ENV: test
           DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
         run: php tests/desktop-v330-mysql.php
+
+      - name: Music Desktop V1 Section 15 Experience Delivery MySQL
+        env:
+          DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
+          DAVESTUNES_DB_USER: root
+          DAVESTUNES_DB_PASS: root
+          DAVESTUNES_APP_ENV: test
+          DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
+        run: php tests/desktop-v340-mysql.php
 
       - name: Music Desktop V1 Section 5 media object MySQL integration
         env:
