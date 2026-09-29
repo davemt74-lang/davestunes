@@ -20,8 +20,12 @@ try{
         dt_experience_delivery_json(['ok'=>false,'error'=>'Method not allowed.'],405);
     }
     $pdo=dt_db();
-    $user=dt_current_user($pdo);
     $ownerType=dt_experience_owner((string)($_GET['owner_type']??''));
+    $user=$ownerType==='user'?dt_current_user($pdo):null;
+    if($ownerType!=='user'){
+        if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
+        header_remove('Set-Cookie');
+    }
     $ownerId=(int)($_GET['owner_id']??0);
     $key=dt_experience_key((string)($_GET['key']??'default'));
     $version=(int)($_GET['version']??0);
