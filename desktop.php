@@ -4,10 +4,12 @@ require __DIR__.'/includes/bootstrap.php';
 
 $pdo=dt_db();
 $user=dt_require_user($pdo);
+$personalizationState=dt_desktop_personalization_state($pdo,(int)$user['id']);
 $boot=[
     'version'=>'music-desktop-v1-section15',
     'release'=>dt_release_version(),
     'releaseChannel'=>dt_release_channel(),
+    'personalizationState'=>$personalizationState,
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -39,7 +41,7 @@ if($bootJson===false)$bootJson='{}';
   <link rel="stylesheet" href="/assets/desktop/desktop.css">
 </head>
 <body class="desktop-page">
-  <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop">
+  <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop" data-personalization-state="<?=dt_e($personalizationState)?>">
     <script type="application/json" id="dt-desktop-boot"><?=$bootJson?></script>
 
     <div class="desktop-topbar">
