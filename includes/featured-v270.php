@@ -374,5 +374,11 @@ function dt_news_active(PDO $pdo,string $surface='public-desktop',int $limit=5):
     $stmt->bindValue(1,$surface,PDO::PARAM_STR);
     $stmt->bindValue(2,$limit,PDO::PARAM_INT);
     $stmt->execute();
-    return $stmt->fetchAll()?:[];
+    $rows=$stmt->fetchAll()?:[];
+    foreach($rows as &$row){
+        $body=trim((string)$row['body_text']);
+        $row['body_text']=mb_strlen($body)>420?mb_substr($body,0,417).'…':$body;
+    }
+    unset($row);
+    return $rows;
 }
