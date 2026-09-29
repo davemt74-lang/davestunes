@@ -41,6 +41,12 @@ if($bootJson===false)$bootJson='{}';
   <link rel="stylesheet" href="/assets/desktop/desktop.css">
 </head>
 <body class="desktop-page">
+  <div class="desktop-splash" data-desktop-splash data-splash-mode="desktop" role="status" aria-live="polite">
+    <div class="desktop-splash-mark" aria-hidden="true"><span></span><span></span></div>
+    <strong>Dave's Tunes</strong>
+    <span>Setting the needle…</span>
+    <div class="desktop-splash-progress" aria-hidden="true"><i></i></div>
+  </div>
   <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop" data-personalization-state="<?=dt_e($personalizationState)?>">
     <script type="application/json" id="dt-desktop-boot"><?=$bootJson?></script>
 
@@ -127,6 +133,7 @@ if($bootJson===false)$bootJson='{}';
   </main>
 
   <?php dt_player_dock(); ?>
+  <script src="/assets/desktop/loading-splash.js"></script>
   <script src="/assets/desktop/desktop-core.js"></script>
   <script src="/assets/desktop/template-midnight.js"></script>
   <script src="/assets/desktop/module-player-bridge.js"></script>
