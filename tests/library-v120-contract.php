@@ -31,6 +31,7 @@ library_has($schema,'entitlement_status VARCHAR(20)','Entitlements require durab
 library_has($library,'dt_entitlement_grant','Entitlement grant primitive is missing.');
 library_has($library,'dt_entitlement_revoke','Entitlement revocation is missing.');
 library_has($library,'Entitlement idempotency key conflicts','Idempotency conflicts must fail closed.');
+library_has($library,'Entitlement source reference is required.','Fulfillment grants must retain authoritative source lineage.');
 library_has($library,"resource_type='edition'",'Edition entitlements must project release access.');
 library_has($library,'grants_digital_access=1','Edition access must honor edition policy.');
 library_has($library,'dt_entitlement_user_has_recording','Recording access resolver is missing.');
@@ -38,8 +39,11 @@ library_has($library,'dt_library_save_release','Saved releases are missing.');
 library_has($library,'dt_library_follow_artist','Artist following is missing.');
 library_has($library,'dt_library_create_crate','Crates are missing.');
 library_has($library,'dt_library_create_playlist','Playlists are missing.');
+library_has($library,'dt_library_remove_from_crate','Crate correction path is missing.');
+library_has($library,'dt_library_remove_from_playlist','Playlist correction path is missing.');
 library_has($library,'dt_library_can_collect','Crates/playlists must use one collection-availability guard.');
 library_not($page,'dt_entitlement_grant','Users must not self-grant entitlements from the library UI.');
+library_has($page,"value=\"add_to_crate\"",'Library UI must allow available music to be placed into crates.');
 
 library_has($bootstrap,"require_once __DIR__.'/library-schema-v120.php';",'Library schema must load in bootstrap.');
 library_has($bootstrap,"require_once __DIR__.'/library-v120.php';",'Library service must load in bootstrap.');
