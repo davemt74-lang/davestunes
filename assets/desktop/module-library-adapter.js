@@ -240,7 +240,9 @@
 
   const setBusy = busy => {
     const root = document.getElementById('dt-desktop-root');
+    const mount = document.querySelector('[data-desktop-mount="library-content"]');
     if (root) root.dataset.libraryBusy = busy ? 'true' : 'false';
+    if (mount) mount.setAttribute('aria-busy', busy ? 'true' : 'false');
   };
 
   const load = async (ctx, view = state.view, query = state.query) => {
