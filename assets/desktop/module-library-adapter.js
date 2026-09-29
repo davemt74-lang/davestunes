@@ -66,7 +66,16 @@
         await ctx.runCommand('media.place-release', { releaseId: item.id });
       } catch (error) { ctx.emit('media-object-error', { error }); }
     });
-    actions.append(place);
+    const open = element('button', 'desktop-card-button', 'Open');
+    open.type='button';
+    open.addEventListener('click',event=>{event.stopPropagation();window.location.assign(item.profileUrl||('/album.php?release='+item.id));});
+    actions.append(place,open);
+    if(item.experienceAvailable){
+      const experience=element('button','desktop-card-button','Experience');
+      experience.type='button';
+      experience.addEventListener('click',event=>{event.stopPropagation();window.location.assign(item.experienceUrl||('/album-experience.php?release='+item.id));});
+      actions.append(experience);
+    }
 
     if (item.playableTrackIds?.length) {
       const play = element('button', 'desktop-card-button', 'Play');
@@ -118,7 +127,7 @@
     return row;
   };
 
-  const artistCard = item => {
+  const artistCard = (item, ctx) => {
     const card = element('article', 'desktop-artist-card');
     card.dataset.artistId = String(item.id);
     const avatar = element('div', 'desktop-artist-avatar');
@@ -135,7 +144,18 @@
     copy.append(element('strong', '', item.name));
     copy.append(element('span', 'desktop-card-meta', item.location || ('@' + item.slug)));
     if (item.followed) copy.append(badge('Following'));
-    card.append(avatar, copy);
+    const actions=element('div','desktop-card-actions');
+    const place=element('button','desktop-card-button secondary','Place');
+    place.type='button';place.addEventListener('click',event=>{event.stopPropagation();ctx.runCommand('media.place-artist',{artistId:item.id}).catch(error=>ctx.emit('media-object-error',{error}));});
+    const open=element('button','desktop-card-button','Open');
+    open.type='button';open.addEventListener('click',event=>{event.stopPropagation();window.location.assign(item.profileUrl||('/artist.php?artist='+encodeURIComponent(item.slug||String(item.id))));});
+    actions.append(place,open);
+    if(item.experienceAvailable){
+      const experience=element('button','desktop-card-button','Experience');
+      experience.type='button';experience.addEventListener('click',event=>{event.stopPropagation();window.location.assign(item.experienceUrl||('/artist-experience.php?artist='+item.id));});
+      actions.append(experience);
+    }
+    card.append(avatar, copy, actions);
     return card;
   };
 
@@ -195,7 +215,7 @@
     const grid = element('div', kind === 'songs' || kind === 'recent' ? 'desktop-data-list' : 'desktop-data-grid');
     for (const item of items) {
       if (kind === 'albums') grid.append(albumCard(item, ctx));
-      else if (kind === 'artists') grid.append(artistCard(item));
+      else if (kind === 'artists') grid.append(artistCard(item, ctx));
       else if (kind === 'songs') grid.append(songRow(item, ctx));
       else if (kind === 'recent') grid.append(recentRow(item, ctx));
       else grid.append(collectionCard(item, ctx));
