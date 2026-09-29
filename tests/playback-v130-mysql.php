@@ -81,6 +81,8 @@ $grant=dt_entitlement_grant($pdo,[
 if(dt_playback_access_mode($pdo,$recordingId,$listener)!=='full')throw new RuntimeException('Entitlement did not unlock full playback.');
 $selected=dt_playback_select_media($pdo,$recordingId,$listener);
 if((int)$selected['asset']['id']!==(int)$full['id'])throw new RuntimeException('Full media selection failed after entitlement.');
+$payload=dt_playback_recording_payload($pdo,$recordingId,$listener);
+if(!$payload||!str_contains((string)$payload['stream_url'],'asset='.(int)$full['id']))throw new RuntimeException('Playback stream URL was not pinned to the authorized asset.');
 
 $session=dt_playback_session($pdo,(int)$listener['id'],'browser:test');
 $queue=dt_playback_replace_queue($pdo,(int)$listener['id'],'browser:test',[$recordingId,$recordingId],'release',(int)$release['id'],0);
@@ -100,11 +102,20 @@ $token='550e8400-e29b-41d4-a716-446655440000';
 $listen=dt_playback_begin_listen($pdo,(int)$listener['id'],'browser:test',$recordingId,$token,'release',(int)$release['id']);
 $replay=dt_playback_begin_listen($pdo,(int)$listener['id'],'browser:test',$recordingId,$token,'release',(int)$release['id']);
 if((int)$listen['id']!==(int)$replay['id'])throw new RuntimeException('Listen start is not idempotent.');
+try{
+    dt_playback_begin_listen($pdo,(int)$listener['id'],'browser:test',$recordingId,$token,'playlist',99);
+    throw new RuntimeException('Listen token accepted changed source lineage.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Listen token accepted changed source lineage.')throw $e;
+}
 $pdo->prepare("UPDATE playback_listens_v130 SET updated_at=DATE_SUB(NOW(),INTERVAL 30 SECOND) WHERE id=?")->execute([(int)$listen['id']]);
 $beat=dt_playback_heartbeat($pdo,(int)$listener['id'],$token,30000,999999,false);
 if((int)$beat['listened_ms']<30000||(int)$beat['listened_ms']>36000)throw new RuntimeException('Heartbeat credit was not bounded by server-observed elapsed time.');
 $complete=dt_playback_heartbeat($pdo,(int)$listener['id'],$token,180000,5000,true);
 if(empty($complete['completed_at']))throw new RuntimeException('Listen completion was not recorded.');
+$completedCredit=(int)$complete['listened_ms'];
+$completeReplay=dt_playback_heartbeat($pdo,(int)$listener['id'],$token,180000,5000,true);
+if((int)$completeReplay['listened_ms']!==$completedCredit)throw new RuntimeException('Completed listen accepted additional credit.');
 if(count(dt_playback_recent_history($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Listening history did not project.');
 
 dt_entitlement_revoke($pdo,(int)$grant['id'],(int)$owner['id'],'refund');
