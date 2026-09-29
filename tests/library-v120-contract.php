@@ -35,6 +35,10 @@ library_has($library,'Entitlement idempotency key conflicts','Idempotency confli
 library_has($library,"'granted_by_user_id'=>$grantor?:null",'Grantor lineage must be immutable on idempotent replay.');
 library_has($library,'Entitlement source reference is required.','Fulfillment grants must retain authoritative source lineage.');
 library_has($library,"resource_type='edition'",'Edition entitlements must project release access.');
+library_has($library,"e.entitlement_type='own'",'Owned-library projection must exclude temporary access.');
+library_has($library,"e.entitlement_type='access'",'Temporary-access projection must be distinct from ownership.');
+library_has($library,'dt_library_owned_recordings','Owned songs must project from direct and release ownership.');
+library_has($library,'dt_library_saved_recordings','Saved songs query is missing.');
 library_has($library,'grants_digital_access=1','Edition access must honor edition policy.');
 library_has($library,'dt_entitlement_user_has_recording','Recording access resolver is missing.');
 library_has($library,'dt_library_save_release','Saved releases are missing.');
@@ -48,6 +52,8 @@ library_has($library,'dt_library_can_collect','Crates/playlists must use one col
 library_not($page,'dt_entitlement_grant','Users must not self-grant entitlements from the library UI.');
 library_not($page,'dt_entitlement_revoke','Users must not self-revoke fulfillment grants from the library UI.');
 library_has($page,"value=\"add_to_crate\"",'Library UI must allow available music to be placed into crates.');
+library_has($page,'Owned Albums','Library UI must label ownership explicitly.');
+library_has($page,'Available','Library UI must distinguish temporary access.');
 
 library_has($bootstrap,"require_once __DIR__.'/library-schema-v120.php';",'Library schema must load in bootstrap.');
 library_has($bootstrap,"require_once __DIR__.'/library-v120.php';",'Library service must load in bootstrap.');
