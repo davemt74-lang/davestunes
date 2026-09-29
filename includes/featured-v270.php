@@ -93,7 +93,12 @@ function dt_featured_admin_rows(PDO $pdo): array
 function dt_featured_catalog_options(PDO $pdo): array
 {
     $releases=$pdo->query("SELECT r.id,r.title,a.name artist_name FROM music_releases_v110 r INNER JOIN artists a ON a.id=r.artist_id WHERE r.release_status='published' ORDER BY a.name,r.title")->fetchAll()?:[];
-    $recordings=$pdo->query("SELECT r.id,r.title,a.name artist_name FROM music_recordings_v110 r INNER JOIN artists a ON a.id=r.artist_id WHERE r.recording_status='active' ORDER BY a.name,r.title")->fetchAll()?:[];
+    $recordings=$pdo->query("SELECT DISTINCT r.id,r.title,a.name artist_name
+      FROM music_recordings_v110 r
+      INNER JOIN artists a ON a.id=r.artist_id
+      INNER JOIN music_release_tracks_v110 rt ON rt.recording_id=r.id
+      INNER JOIN music_releases_v110 rel ON rel.id=rt.release_id AND rel.release_status='published'
+      WHERE r.recording_status='active' ORDER BY a.name,r.title")->fetchAll()?:[];
     return ['releases'=>$releases,'recordings'=>$recordings];
 }
 
