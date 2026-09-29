@@ -4,9 +4,10 @@ require __DIR__.'/includes/bootstrap.php';
 
 $pdo=dt_db();
 $recordingId=max(0,(int)($_GET['recording']??0));
+$requestedAssetId=max(0,(int)($_GET['asset']??0));
 $user=dt_current_user($pdo);
 $selected=dt_playback_select_media($pdo,$recordingId,$user);
-if(!$selected){http_response_code(404);exit;}
+if(!$selected||$requestedAssetId<1||(int)$selected['asset']['id']!==$requestedAssetId){http_response_code(404);exit;}
 
 $asset=$selected['asset'];
 $path=dt_playback_storage_path((string)$asset['storage_key']);
@@ -51,6 +52,5 @@ while($remaining>0&&!feof($fp)){
     if($chunk===false)break;
     echo $chunk;
     $remaining-=strlen($chunk);
-    if(function_exists('fastcgi_finish_request')){ /* no-op: keep streaming */ }
 }
 fclose($fp);
