@@ -11,12 +11,14 @@ if(!$release||(string)$release['release_status']!=='published'){http_response_co
 $active=dt_experience_active($pdo,'release',$releaseId,'default');
 if(!$active){header('Location: /album.php?release='.$releaseId);exit;}
 $boot=[
-  'version'=>'music-desktop-v1-section12',
+  'version'=>'music-desktop-v1-section15',
+  'source'=>'album-experience',
   'releaseId'=>$releaseId,
   'releaseTitle'=>(string)$release['title'],
   'artistName'=>(string)$release['artist_name'],
-  'manifest'=>$active['manifest']??null,
-  'sha256'=>$active['sha256']??'',
+  'versionNumber'=>(int)$active['versionNumber'],
+  'sha256'=>(string)$active['sha256'],
+  'deliveryUrl'=>dt_experience_delivery_url('release',$releaseId,'default',(int)$active['versionNumber'],(string)$active['sha256']),
 ];
 $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?:'{}';
 ?><!doctype html>
@@ -29,7 +31,7 @@ $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_H
 </head>
 <body class="desktop-page album-experience-page">
 <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop">
-  <script type="application/json" id="dt-album-experience-boot"><?=$bootJson?></script>
+  <script type="application/json" id="dt-public-experience-boot"><?=$bootJson?></script>
   <div class="desktop-topbar">
     <a class="desktop-brand" href="/album.php?release=<?=$releaseId?>"><span class="desktop-brand-mark"></span><?=dt_e((string)$release['title'])?></a>
     <div class="desktop-actions"><a class="desktop-chip" href="/album.php?release=<?=$releaseId?>">Exit Experience</a></div>
@@ -51,6 +53,6 @@ $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_H
 <script src="/assets/desktop/experience-effects.js"></script>
 <script src="/assets/desktop/module-experience-runtime.js"></script>
 <script src="/assets/desktop/module-z-scroll.js"></script>
-<script src="/assets/album-experience.js"></script>
+<script src="/assets/public-experience.js"></script>
 </body>
 </html>
