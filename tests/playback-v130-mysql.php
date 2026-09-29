@@ -39,6 +39,13 @@ $release=dt_catalog_create_release($pdo,$artistId,$owner,['title'=>'Protected Al
 dt_catalog_add_recording_to_release($pdo,$artistId,(int)$release['id'],$recordingId,$owner,1,1);
 dt_catalog_publish_release($pdo,$artistId,(int)$release['id'],$owner);
 
+try{
+    dt_playback_assert_storage_key('../outside.mp3');
+    throw new RuntimeException('Traversal storage key was accepted.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Traversal storage key was accepted.')throw $e;
+}
+
 $fullKey='artist-'.$artistId.'/recording-'.$recordingId.'/master.mp3';
 $previewKey='artist-'.$artistId.'/recording-'.$recordingId.'/preview.mp3';
 @mkdir(dirname($mediaRoot.'/'.$fullKey),0770,true);
@@ -76,8 +83,14 @@ $selected=dt_playback_select_media($pdo,$recordingId,$listener);
 if((int)$selected['asset']['id']!==(int)$full['id'])throw new RuntimeException('Full media selection failed after entitlement.');
 
 $session=dt_playback_session($pdo,(int)$listener['id'],'browser:test');
-$queue=dt_playback_replace_queue($pdo,(int)$listener['id'],'browser:test',[$recordingId,$recordingId],'release',(int)$release['id']);
+$queue=dt_playback_replace_queue($pdo,(int)$listener['id'],'browser:test',[$recordingId,$recordingId],'release',(int)$release['id'],0);
 if(count($queue)!==1)throw new RuntimeException('Queue did not de-duplicate canonical recordings.');
+try{
+    dt_playback_replace_queue($pdo,(int)$listener['id'],'browser:test',[$recordingId],'release',(int)$release['id'],0);
+    throw new RuntimeException('Stale queue revision was accepted.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Stale queue revision was accepted.')throw $e;
+}
 $state=dt_playback_update_state($pdo,(int)$listener['id'],'browser:test',[
     'recording_id'=>$recordingId,'playback_state'=>'playing','position_ms'=>12000,'volume'=>0.65,
 ]);
@@ -87,8 +100,9 @@ $token='550e8400-e29b-41d4-a716-446655440000';
 $listen=dt_playback_begin_listen($pdo,(int)$listener['id'],'browser:test',$recordingId,$token,'release',(int)$release['id']);
 $replay=dt_playback_begin_listen($pdo,(int)$listener['id'],'browser:test',$recordingId,$token,'release',(int)$release['id']);
 if((int)$listen['id']!==(int)$replay['id'])throw new RuntimeException('Listen start is not idempotent.');
+$pdo->prepare("UPDATE playback_listens_v130 SET updated_at=DATE_SUB(NOW(),INTERVAL 30 SECOND) WHERE id=?")->execute([(int)$listen['id']]);
 $beat=dt_playback_heartbeat($pdo,(int)$listener['id'],$token,30000,999999,false);
-if((int)$beat['listened_ms']!==120000)throw new RuntimeException('Heartbeat time delta was not bounded.');
+if((int)$beat['listened_ms']<30000||(int)$beat['listened_ms']>36000)throw new RuntimeException('Heartbeat credit was not bounded by server-observed elapsed time.');
 $complete=dt_playback_heartbeat($pdo,(int)$listener['id'],$token,180000,5000,true);
 if(empty($complete['completed_at']))throw new RuntimeException('Listen completion was not recorded.');
 if(count(dt_playback_recent_history($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Listening history did not project.');
