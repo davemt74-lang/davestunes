@@ -162,6 +162,9 @@ function dt_desktop_object_update(PDO $pdo,int $userId,int $objectId,int $expect
     if(!$row)throw new RuntimeException('Desktop object was not found.');
     if((int)$row['revision']!==$expectedRevision)throw new RuntimeException('Desktop object changed on another surface. Refresh before saving.');
 
+    $isUnpinning=array_key_exists('pinned',$input)&&empty($input['pinned']);
+    $spatialChange=array_key_exists('x',$input)||array_key_exists('y',$input)||array_key_exists('rotation',$input)||array_key_exists('scale',$input);
+    if((bool)$row['is_pinned']&&$spatialChange&&!$isUnpinning)throw new RuntimeException('Unpin this Desktop object before moving or transforming it.');
     $x=array_key_exists('x',$input)?dt_desktop_object_float($input['x'],0,1,'Desktop X'):(float)$row['x_norm'];
     $y=array_key_exists('y',$input)?dt_desktop_object_float($input['y'],0,1,'Desktop Y'):(float)$row['y_norm'];
     $rotation=array_key_exists('rotation',$input)?dt_desktop_object_float($input['rotation'],-180,180,'Desktop rotation'):(float)$row['rotation_deg'];
