@@ -1,0 +1,51 @@
+name: Package Soft Launch RC2 Splash Hotfix
+
+on:
+  push:
+    branches:
+      - ops/package-soft-launch-rc2-splash-hotfix
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact hotfix baseline
+        uses: actions/checkout@v4
+        with:
+          ref: c09348b1074bce55ee794cf8659d65fde8fcc556
+          fetch-depth: 1
+
+      - name: Build deploy package
+        run: |
+          set -euo pipefail
+          rm -rf deploy
+          mkdir deploy
+          rsync -a ./ deploy/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'tests' \
+            --exclude '.gitignore'
+          cat > deploy/DEPLOY_INFO.txt <<'EOF'
+          Dave's Tunes
+          Release: Soft Launch RC2 + Splash Hotfix
+          Version: 1.0.0-rc2
+          Commit: c09348b1074bce55ee794cf8659d65fde8fcc556
+          Install: upload/extract, then open /install.php for a fresh install.
+          EOF
+          cd deploy
+          zip -r ../davestunes-soft-launch-rc2-splash-hotfix-deploy.zip .
+          cd ..
+          sha256sum davestunes-soft-launch-rc2-splash-hotfix-deploy.zip > davestunes-soft-launch-rc2-splash-hotfix-deploy.zip.sha256
+
+      - name: Upload deploy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: davestunes-soft-launch-rc2-splash-hotfix-deploy
+          path: |
+            davestunes-soft-launch-rc2-splash-hotfix-deploy.zip
+            davestunes-soft-launch-rc2-splash-hotfix-deploy.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
