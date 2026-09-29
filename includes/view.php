@@ -10,7 +10,8 @@ function dt_page_header(string $title): void
     echo '<title>'.$title.' · '.$app.'</title><link rel="stylesheet" href="/assets/app.css"></head><body>';
     echo '<header class="site-header"><a class="brand" href="/">Dave\'s Tunes</a><nav>';
     if($user){
-        echo '<a href="/dashboard.php">Dashboard</a><a href="/logout.php">Sign out</a>';
+        echo '<a href="/dashboard.php">Dashboard</a>';
+        echo '<form class="nav-form" method="post" action="/logout.php">'.dt_csrf_field().'<button class="nav-link" type="submit">Sign out</button></form>';
     }else{
         echo '<a href="/login.php">Sign in</a><a class="button small" href="/signup.php">Create account</a>';
     }
