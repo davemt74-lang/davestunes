@@ -8,6 +8,8 @@ $stmt=$pdo->prepare("SELECT * FROM news_posts_v110 WHERE slug=? AND post_status=
 $stmt->execute([$slug]);
 $post=$stmt->fetch();
 if(!$post){http_response_code(404);exit('News post not found.');}
+$user=dt_current_user($pdo);
+if((string)$post['placement']==='signed-in-desktop'&&!$user){http_response_code(404);exit('News post not found.');}
 dt_page_header((string)$post['headline']);
 ?>
 <main class="page narrow news-article">
