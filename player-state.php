@@ -34,14 +34,11 @@ try{
     $action=(string)($_POST['action']??'');
 
     if($action==='state'){
-        $session=dt_playback_update_state($pdo,$userId,$sessionKey,[
-            'recording_id'=>$_POST['recording_id']??null,
-            'playback_state'=>$_POST['playback_state']??null,
-            'position_ms'=>$_POST['position_ms']??null,
-            'volume'=>$_POST['volume']??null,
-            'repeat_mode'=>$_POST['repeat_mode']??null,
-            'shuffle_enabled'=>$_POST['shuffle_enabled']??0,
-        ]);
+        $stateInput=[];
+        foreach(['recording_id','playback_state','position_ms','volume','repeat_mode','shuffle_enabled'] as $field){
+            if(array_key_exists($field,$_POST))$stateInput[$field]=$_POST[$field];
+        }
+        $session=dt_playback_update_state($pdo,$userId,$sessionKey,$stateInput);
         dt_player_json(['ok'=>true,'session'=>$session,'current'=>$session['current_recording_id']?dt_playback_recording_payload($pdo,(int)$session['current_recording_id'],$user):null]);
     }
 
@@ -51,7 +48,7 @@ try{
         $expectedRevision=array_key_exists('expected_queue_revision',$_POST)&&$_POST['expected_queue_revision']!==''?(int)$_POST['expected_queue_revision']:null;
         $queue=dt_playback_replace_queue(
             $pdo,$userId,$sessionKey,$ids,(string)($_POST['source_type']??''),
-            isset($_POST['source_id'])?(int)$_POST['source_id']:null,$expectedRevision
+            isset($_POST['source_id'])&&$_POST['source_id']!==''?(int)$_POST['source_id']:null,$expectedRevision
         );
         $session=dt_playback_session($pdo,$userId,$sessionKey);
         dt_player_json(['ok'=>true,'session'=>$session,'queue'=>$queue]);
@@ -60,7 +57,7 @@ try{
     if($action==='begin_listen'){
         $listen=dt_playback_begin_listen(
             $pdo,$userId,$sessionKey,(int)($_POST['recording_id']??0),(string)($_POST['play_token']??''),
-            (string)($_POST['source_type']??''),isset($_POST['source_id'])?(int)$_POST['source_id']:null
+            (string)($_POST['source_type']??''),isset($_POST['source_id'])&&$_POST['source_id']!==''?(int)$_POST['source_id']:null
         );
         dt_player_json(['ok'=>true,'listen'=>$listen,'current'=>dt_playback_recording_payload($pdo,(int)$listen['recording_id'],$user)]);
     }
@@ -74,6 +71,9 @@ try{
     }
 
     dt_player_json(['ok'=>false,'error'=>'Unknown player action.'],400);
-}catch(Throwable $e){
+}catch(RuntimeException $e){
     dt_player_json(['ok'=>false,'error'=>$e->getMessage()],400);
+}catch(Throwable $e){
+    error_log('DaveTunes player API failure: '.$e->getMessage());
+    dt_player_json(['ok'=>false,'error'=>'Player service is temporarily unavailable.'],500);
 }
