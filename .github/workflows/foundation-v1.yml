@@ -106,6 +106,9 @@ jobs:
       - name: Music Desktop V1 Section 11 effects library contract
         run: node tests/desktop-v300-contract.mjs
 
+      - name: Music Desktop V1 Section 12 Album Experience Studio contract
+        run: php tests/desktop-v310-contract.php
+
       - name: Foundation MySQL integration
         env:
           DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
