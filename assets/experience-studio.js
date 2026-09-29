@@ -308,6 +308,19 @@
     wrap.hidden=false;
   };
 
+  const addEffectPreset=async()=>{
+    const scene=state.selected?.type==='scene'?(manifest().scenes||[]).find(s=>s.key===state.selected.key):null;
+    if(!scene)throw new Error('Select a scene before adding an effect preset.');
+    const presets=window.DaveTunesEffectsLibrary?.presets||[];
+    if(!presets.length)throw new Error('Effect presets are unavailable.');
+    const choices=presets.map((p,i)=>(i+1)+'. '+p.label).join('\n');
+    const selected=Number(prompt('Choose effect preset:\n'+choices,'1'))-1;
+    const preset=presets[selected];if(!preset)return;
+    const settings={...(scene.settings||{}),effects:preset.effects};
+    await post('update-scene',{version_id:versionId(),scene_key:scene.key,settings:JSON.stringify(settings)});
+    await load();selectScene(scene.key);
+  };
+
   const publish=async()=>{
     if(!confirm('Publish this draft as the live experience?'))return;
     await post('publish',{version_id:versionId()});
@@ -319,6 +332,7 @@
   q('[data-studio-action="add-scene"]').addEventListener('click',()=>addScene().catch(showError));
   q('[data-studio-action="add-node"]').addEventListener('click',()=>addNode().catch(showError));
   q('[data-studio-action="connect"]').addEventListener('click',()=>connect().catch(showError));
+  q('[data-studio-action="effect-preset"]').addEventListener('click',()=>addEffectPreset().catch(showError));
   q('[data-studio-action="preview"]').addEventListener('click',preview);
   q('[data-studio-action="publish"]').addEventListener('click',()=>publish().catch(showError));
   q('[data-studio-preview-close]').addEventListener('click',()=>{q('[data-studio-preview]').hidden=true;});
