@@ -2,3 +2,5 @@
 .nav-form{margin:0}.nav-link{appearance:none;background:none;color:var(--muted);padding:0;font:inherit;font-weight:400;border-radius:0}.nav-link:hover{color:var(--text)}
 hr{border:0;border-top:1px solid var(--line);margin:24px 0}a{color:var(--accent)}
 .track-list{padding-left:20px}.track-list li{margin:10px 0}.track-list .muted{margin-left:8px}.inline-form{display:inline;margin-left:10px}
+.action-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.action-row form{margin:0}.secondary-button{background:#252a30;color:var(--text);border:1px solid var(--line)}
+.crate-add-form{display:flex;gap:8px;align-items:center}.crate-add-form select{min-width:140px}
