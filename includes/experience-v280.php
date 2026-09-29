@@ -500,3 +500,32 @@ function dt_experience_find_for_owner(PDO $pdo,string $ownerType,int $ownerId,st
     $row=$stmt->fetch();
     return is_array($row)?$row:null;
 }
+
+
+function dt_experience_owner_context(PDO $pdo,string $ownerType,int $ownerId): array
+{
+    $ownerType=dt_experience_owner($ownerType);
+    if($ownerType==='release'){
+        $stmt=$pdo->prepare("SELECT r.id,r.title,r.release_status,r.artist_id,a.name artist_name FROM music_releases_v110 r INNER JOIN artists a ON a.id=r.artist_id WHERE r.id=? LIMIT 1");
+        $stmt->execute([$ownerId]);
+        $release=$stmt->fetch();
+        if(!$release)return ['title'=>'Album Experience Studio','subtitle'=>'Build the interactive experience for this album.','experience_name'=>'Album Experience','back_url'=>''];
+        return [
+            'title'=>(string)$release['title'].' · Experience Studio',
+            'subtitle'=>'Author the interactive album journey for '.(string)$release['artist_name'].'. Drafts stay private until you publish.',
+            'experience_name'=>(string)$release['title'].' Experience',
+            'back_url'=>'/album.php?release='.(int)$release['id'],
+            'release_status'=>(string)$release['release_status'],
+            'artist_id'=>(int)$release['artist_id'],
+        ];
+    }
+    if($ownerType==='artist'){
+        $artist=dt_artist_by_id($pdo,$ownerId);
+        return ['title'=>($artist?(string)$artist['name']:'Artist').' · Experience Studio','subtitle'=>'Build this artist desktop experience.','experience_name'=>'Artist Experience','back_url'=>''];
+    }
+    if($ownerType==='recording'){
+        $stmt=$pdo->prepare("SELECT title FROM music_recordings_v110 WHERE id=? LIMIT 1");$stmt->execute([$ownerId]);$title=(string)($stmt->fetchColumn()?:'Recording');
+        return ['title'=>$title.' · Experience Studio','subtitle'=>'Build an interactive experience for this recording.','experience_name'=>$title.' Experience','back_url'=>''];
+    }
+    return ['title'=>'Experience Studio','subtitle'=>'Build scenes, arrange the film-strip, connect flow nodes, preview, and publish one canonical experience graph.','experience_name'=>'My Experience','back_url'=>''];
+}
