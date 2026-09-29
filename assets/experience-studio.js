@@ -163,13 +163,45 @@
     enabled.append(check,document.createTextNode(' Enabled'));
     form.append(enabled);
     const settings=field('Scene settings JSON','settings',JSON.stringify(scene.settings||{},null,2),'textarea');form.append(settings);
+
+    const layers=document.createElement('div');layers.className='studio-layer-list';
+    const layersTitle=document.createElement('div');layersTitle.className='studio-layer-list-title';
+    layersTitle.append(document.createElement('strong'),button('+ Layer','add-layer'));
+    layersTitle.querySelector('strong').textContent='Layers';
+    layers.append(layersTitle);
+    for(const layer of scene.layers||[]){
+      const row=document.createElement('div');row.className='studio-layer-row';row.dataset.layerKey=layer.key;
+      const copy=document.createElement('div');
+      const name=document.createElement('strong');name.textContent=layer.key;
+      const meta=document.createElement('span');meta.textContent=layer.type+' · order '+layer.order;
+      copy.append(name,meta);
+      const controls=document.createElement('div');
+      controls.append(button('Edit','edit-layer'),button('Delete','delete-layer'));
+      row.append(copy,controls);layers.append(row);
+    }
+    form.append(layers);
+
     const actions=document.createElement('div');actions.className='studio-inspector-actions';
     actions.append(button('Save','save','primary'),button('Duplicate','duplicate'),button('Delete','delete'));
     form.append(actions);
     form.addEventListener('submit',e=>e.preventDefault());
     form.addEventListener('click',async e=>{
       const action=e.target?.dataset?.action;if(!action)return;
-      if(action==='save'){
+      if(action==='add-layer'){
+        const layerKey=slug(prompt('Layer key','layer-'+((scene.layers?.length||0)+1))||'');if(!layerKey)return;
+        const layerType=slug(prompt('Layer type (heading, text, image, button)','text')||'text');if(!layerType)return;
+        const text=prompt('Text / label','')??'';
+        await post('add-layer',{version_id:versionId(),scene_key:scene.key,layer_key:layerKey,layer_type:layerType,sort_order:(scene.layers?.length||0)+1,settings:JSON.stringify(text?{text}:{})});
+      }else if(action==='edit-layer'){
+        const row=e.target.closest('[data-layer-key]');const layer=(scene.layers||[]).find(item=>item.key===row?.dataset?.layerKey);if(!layer)return;
+        const layerType=slug(prompt('Layer type',layer.type)||layer.type);
+        const settingsRaw=prompt('Layer settings JSON',JSON.stringify(layer.settings||{}));if(settingsRaw===null)return;
+        await post('update-layer',{version_id:versionId(),scene_key:scene.key,layer_key:layer.key,layer_type:layerType,sort_order:layer.order,settings:settingsRaw});
+      }else if(action==='delete-layer'){
+        const row=e.target.closest('[data-layer-key]');const layerKey=row?.dataset?.layerKey;if(!layerKey)return;
+        if(!confirm('Delete this layer?'))return;
+        await post('delete-layer',{version_id:versionId(),scene_key:scene.key,layer_key:layerKey});
+      }else if(action==='save'){
         await post('update-scene',{version_id:versionId(),scene_key:scene.key,title:form.title.value,weight:form.weight.value,is_enabled:form.enabled.checked?'1':'0',settings:form.settings.value});
       }else if(action==='duplicate'){
         const key=slug(scene.key+'-copy-'+Date.now().toString().slice(-4));
