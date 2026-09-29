@@ -6,6 +6,8 @@ $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
     'version'=>'music-desktop-v1-section15',
+    'release'=>dt_release_version(),
+    'releaseChannel'=>dt_release_channel(),
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -46,6 +48,7 @@ if($bootJson===false)$bootJson='{}';
         <button class="desktop-chip" data-zscroll-toggle type="button" aria-pressed="false">Explore</button>
         <a class="desktop-chip" href="/library.php">Library</a>
         <button class="desktop-chip" data-desktop-reset type="button">Reset Desktop</button>
+        <span class="desktop-release-chip"><?=dt_e(dt_release_label())?></span>
         <a class="desktop-chip" href="/dashboard.php">Account</a>
       </div>
     </div>
