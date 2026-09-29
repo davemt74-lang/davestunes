@@ -13,7 +13,7 @@ $boot=[
     'capabilities'=>[
         'player'=>true,
         'dataAdapter'=>true,
-        'objects'=>false,
+        'objects'=>true,
         'turntable'=>false,
         'zScroll'=>false,
         'flowBuilder'=>false,
@@ -38,6 +38,8 @@ if($bootJson===false)$bootJson='{}';
     <div class="desktop-topbar">
       <a class="desktop-brand" href="/desktop.php"><span class="desktop-brand-mark" aria-hidden="true"></span>Dave's Tunes</a>
       <div class="desktop-actions">
+        <button class="desktop-chip" type="button" data-desktop-action="new-note">+ Note</button>
+        <button class="desktop-chip" type="button" data-desktop-action="reset-layout">Reset Desktop</button>
         <a class="desktop-chip" href="/library.php">Library</a>
         <a class="desktop-chip" href="/dashboard.php">Account</a>
       </div>
@@ -66,9 +68,7 @@ if($bootJson===false)$bootJson='{}';
       </div>
     </section>
 
-    <section class="desktop-layer desktop-layer-objects" data-desktop-layer="objects" aria-label="Spatial object layer">
-      <div class="desktop-object-hint" aria-hidden="true">Spatial album / photo / note mount</div>
-    </section>
+    <section class="desktop-layer desktop-layer-objects" data-desktop-layer="objects" aria-label="Spatial object layer"></section>
 
     <section class="desktop-layer desktop-layer-turntable" data-desktop-layer="turntable" aria-label="Turntable layer">
       <div class="turntable-mount" aria-hidden="true">
@@ -84,7 +84,7 @@ if($bootJson===false)$bootJson='{}';
       </div>
     </section>
 
-    <section class="desktop-layer desktop-layer-system" data-desktop-layer="system" aria-hidden="true">
+    <section class="desktop-layer desktop-layer-system" data-desktop-layer="system" aria-label="Desktop system controls">
       <div class="system-mount"></div>
     </section>
   </main>
@@ -93,6 +93,7 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/desktop-core.js"></script>
   <script src="/assets/desktop/template-midnight.js"></script>
   <script src="/assets/desktop/module-player-bridge.js"></script>
+  <script src="/assets/desktop/module-spatial-objects.js"></script>
   <script src="/assets/desktop/module-library-adapter.js"></script>
 </body>
 </html>
