@@ -118,6 +118,7 @@ function dt_experience_ensure_schema(?PDO $pdo=null): void
         CONSTRAINT fk_experience_event_actor_v280 FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    try{$pdo->exec("ALTER TABLE experiences_v280 ADD CONSTRAINT fk_experience_active_version_v280 FOREIGN KEY (active_version_id) REFERENCES experience_versions_v280(id) ON DELETE SET NULL");}
-    catch(PDOException $e){if((string)$e->getCode()!=='23000'&&!str_contains(strtolower($e->getMessage()),'duplicate'))throw $e;}
+    $fk=$pdo->prepare("SELECT 1 FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND table_name='experiences_v280' AND constraint_name='fk_experience_active_version_v280' LIMIT 1");
+    $fk->execute();
+    if(!$fk->fetchColumn())$pdo->exec("ALTER TABLE experiences_v280 ADD CONSTRAINT fk_experience_active_version_v280 FOREIGN KEY (active_version_id) REFERENCES experience_versions_v280(id) ON DELETE SET NULL");
 }
