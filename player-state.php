@@ -47,7 +47,11 @@ try{
     if($action==='queue'){
         $ids=json_decode((string)($_POST['recording_ids']??'[]'),true);
         if(!is_array($ids))throw new RuntimeException('Queue payload is invalid.');
-        $queue=dt_playback_replace_queue($pdo,$userId,$sessionKey,$ids,(string)($_POST['source_type']??''),isset($_POST['source_id'])?(int)$_POST['source_id']:null);
+        $expectedRevision=array_key_exists('expected_queue_revision',$_POST)&&$_POST['expected_queue_revision']!==''?(int)$_POST['expected_queue_revision']:null;
+        $queue=dt_playback_replace_queue(
+            $pdo,$userId,$sessionKey,$ids,(string)($_POST['source_type']??''),
+            isset($_POST['source_id'])?(int)$_POST['source_id']:null,$expectedRevision
+        );
         $session=dt_playback_session($pdo,$userId,$sessionKey);
         dt_player_json(['ok'=>true,'session'=>$session,'queue'=>$queue]);
     }
