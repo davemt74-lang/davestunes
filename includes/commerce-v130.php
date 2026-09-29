@@ -231,6 +231,17 @@ function dt_commerce_prepare_order(PDO $pdo,array $user,array $offerIds,string $
     $ownsTransaction=!$pdo->inTransaction();
     if($ownsTransaction)$pdo->beginTransaction();
     try{
+        // Lock the unique checkout-key gap before reading offers. This serializes
+        // concurrent preparations using the same idempotency key.
+        $checkoutLock=$pdo->prepare('SELECT * FROM music_orders_v130 WHERE checkout_key=? FOR UPDATE');
+        $checkoutLock->execute([$checkoutKey]);
+        $lockedExisting=$checkoutLock->fetch();
+        if($lockedExisting){
+            if((int)$lockedExisting['buyer_user_id']!==$userId||(string)$lockedExisting['cart_hash']!==$cartHash)throw new RuntimeException('Checkout idempotency key conflicts with an existing order.');
+            if($ownsTransaction)$pdo->commit();
+            return $lockedExisting;
+        }
+
         $placeholders=implode(',',array_fill(0,count($ids),'?'));
         $stmt=$pdo->prepare("SELECT * FROM music_offers_v130 WHERE id IN ({$placeholders}) FOR UPDATE");
         $stmt->execute($ids);
@@ -252,15 +263,12 @@ function dt_commerce_prepare_order(PDO $pdo,array $user,array $offerIds,string $
         try{
             $insert=$pdo->prepare("INSERT INTO music_orders_v130
                 (order_number,checkout_key,cart_hash,buyer_user_id,order_status,currency,subtotal_cents,total_cents,expires_at)
-                VALUES (?,?,?,?,'pending',?,?,?,?,?)");
+                VALUES (?,?,?,?,'pending',?,?,?,?)");
             // Keep the explicit values visible; subtotal and total are intentionally identical in V1.
             $insert->execute([$orderNumber,$checkoutKey,$cartHash,$userId,$currency,$subtotal,$subtotal,$expires]);
         }catch(PDOException $e){
             if((string)$e->getCode()!=='23000')throw $e;
-            $race=dt_commerce_order_by_checkout_key($pdo,$checkoutKey);
-            if(!$race||(int)$race['buyer_user_id']!==$userId||(string)$race['cart_hash']!==$cartHash)throw new RuntimeException('Checkout idempotency key conflicts with an existing order.');
-            if($ownsTransaction)$pdo->commit();
-            return $race;
+            throw new RuntimeException('Checkout idempotency key or order number conflicts with existing history.');
         }
         $orderId=(int)$pdo->lastInsertId();
 
@@ -335,6 +343,12 @@ function dt_commerce_capture_payment(
         $stmt=$pdo->prepare('SELECT * FROM music_orders_v130 WHERE id=? FOR UPDATE');
         $stmt->execute([$orderId]);$order=$stmt->fetch();
         if(!$order)throw new RuntimeException('Order was not found.');
+        $lockedEvent=dt_commerce_payment_event($pdo,$provider,$eventKey);
+        if($lockedEvent){
+            if((int)$lockedEvent['order_id']!==$orderId||(string)$lockedEvent['event_type']!=='payment.succeeded'||(int)$lockedEvent['amount_cents']!==$amountCents||(string)$lockedEvent['currency']!==$currency||(string)$lockedEvent['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
+            if($ownsTransaction)$pdo->commit();
+            return $order;
+        }
         if(in_array((string)$order['order_status'],['cancelled','refunded'],true))throw new RuntimeException('This order cannot accept payment.');
         if((string)$order['order_status']==='pending'&&new DateTimeImmutable((string)$order['expires_at'])<=new DateTimeImmutable('now'))throw new RuntimeException('Checkout has expired; prepare a new order.');
         if((int)$order['total_cents']!==$amountCents||(string)$order['currency']!==$currency)throw new RuntimeException('Payment amount or currency does not match the order snapshot.');
@@ -427,10 +441,13 @@ function dt_commerce_refund_order(
         $stmt=$pdo->prepare('SELECT * FROM music_orders_v130 WHERE id=? FOR UPDATE');
         $stmt->execute([$orderId]);$order=$stmt->fetch();
         if(!$order)throw new RuntimeException('Order was not found.');
-        if((string)$order['order_status']==='refunded'){
+        $lockedEvent=dt_commerce_payment_event($pdo,$provider,$eventKey);
+        if($lockedEvent){
+            if((int)$lockedEvent['order_id']!==$orderId||(string)$lockedEvent['event_type']!=='refund.succeeded'||(int)$lockedEvent['amount_cents']!==$amountCents||(string)$lockedEvent['currency']!==$currency||(string)$lockedEvent['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
             if($ownsTransaction)$pdo->commit();
             return $order;
         }
+        if((string)$order['order_status']==='refunded')throw new RuntimeException('Order is already refunded.');
         if(!in_array((string)$order['order_status'],['paid','fulfilled'],true))throw new RuntimeException('Only paid or fulfilled orders can be refunded.');
         if((string)$order['payment_provider']!==$provider||(string)$order['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Refund does not match the captured payment.');
         if((int)$order['total_cents']!==$amountCents||(string)$order['currency']!==$currency)throw new RuntimeException('V1 refunds must match the full order total.');
