@@ -149,6 +149,8 @@ function dt_artist_set_membership(PDO $pdo,int $artistId,int $subjectUserId,stri
     if(!dt_artist_can($pdo,$artistId,$actorId,'team'))throw new RuntimeException('You cannot manage this artist team.');
     if(!dt_artist_valid_role($role)||$role==='owner'||!dt_artist_valid_membership_status($status))throw new RuntimeException('Choose a valid artist team role.');
     if($subjectUserId===(int)$artist['owner_user_id'])throw new RuntimeException('Transfer ownership instead of editing the owner membership.');
+    $subject=dt_auth_user_by_id($pdo,$subjectUserId);
+    if(!$subject||(string)$subject['account_status']!=='active')throw new RuntimeException('Artist team members must have an active Dave\'s Tunes account.');
 
     $actorRole=dt_artist_role($pdo,$artistId,$actorId);
     $before=dt_artist_membership($pdo,$artistId,$subjectUserId);
