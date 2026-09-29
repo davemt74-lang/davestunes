@@ -69,7 +69,7 @@ $grant=dt_entitlement_grant($pdo,[
 ]);
 $private=dt_desktop_media_release($pdo,$user,(int)$privateRelease['id']);
 if(!$private||$private['title']!=='Private Sleeve'||$private['accessState']!=='available')throw new RuntimeException('Entitled private sleeve hydration failed.');
-if($private['playableTrackIds']!==[(int)$privateSong['id'])throw new RuntimeException('Private full track did not hydrate as playable.');
+if($private['playableTrackIds']!==[(int)$privateSong['id']]throw new RuntimeException('Private full track did not hydrate as playable.');
 if(dt_desktop_media_release($pdo,$other,(int)$privateRelease['id'])!==null)throw new RuntimeException('Private sleeve leaked to another user.');
 
 $object=dt_desktop_object_create($pdo,(int)$user['id'],[
