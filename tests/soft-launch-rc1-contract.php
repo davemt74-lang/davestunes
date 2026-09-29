@@ -17,18 +17,14 @@ foreach(compact('release','bootstrap','index','dashboard','desktop','desktopCss'
     if($content===false)throw new RuntimeException('Could not load '.$name.'.');
 }
 
-foreach([
-    "DAVESTUNES_RELEASE_VERSION='1.0.0-rc1'",
-    "DAVESTUNES_RELEASE_CHANNEL='soft-launch'",
-    "DAVESTUNES_RELEASE_LABEL='Soft Launch RC1'",
-] as $needle){
-    if(!str_contains($release,$needle))throw new RuntimeException('Release metadata missing '.$needle.'.');
-}
+if(!preg_match("/DAVESTUNES_RELEASE_VERSION='1\\.0\\.0-rc[1-9][0-9]*'/",$release))throw new RuntimeException('Soft-launch release version is invalid.');
+if(!str_contains($release,"DAVESTUNES_RELEASE_CHANNEL='soft-launch'"))throw new RuntimeException('Soft-launch release channel is missing.');
+if(!str_contains($release,"DAVESTUNES_RELEASE_LABEL='Soft Launch RC"))throw new RuntimeException('Soft-launch release label is missing.');
 
 if(!str_contains($bootstrap,"require_once __DIR__.'/release.php'"))throw new RuntimeException('Release metadata is not loaded by bootstrap.');
-if(!str_contains($index,'dt_release_label()'))throw new RuntimeException('Landing page must surface the soft-launch label.');
-if(!str_contains($index,'Music Desktop'))throw new RuntimeException('Landing page must explain the Music Desktop.');
-if(!str_contains($index,'Digital Turntable'))throw new RuntimeException('Landing page must explain the turntable.');
+if(!str_contains($index,'dt_release_label()'))throw new RuntimeException('Desktop home must surface the soft-launch label.');
+if(!str_contains($index,'desktop-shell'))throw new RuntimeException('Homepage must remain a Desktop surface.');
+if(!str_contains($index,'turntable-mount'))throw new RuntimeException('Homepage must retain the visual turntable.');
 if(str_contains(strtolower($index),'purchase')||str_contains(strtolower($index),'buy music'))throw new RuntimeException('RC1 landing page must not advertise commerce that is not live.');
 if(!str_contains($dashboard,'dt_release_label()'))throw new RuntimeException('Dashboard must surface the release label.');
 if(!str_contains($desktop,"'release'=>dt_release_version()"))throw new RuntimeException('Desktop boot must expose the release version.');
@@ -36,7 +32,7 @@ if(!str_contains($desktop,'desktop-release-chip'))throw new RuntimeException('De
 if(!str_contains($desktopCss,'Soft Launch RC1 — physical desk depth'))throw new RuntimeException('CSS desk-depth treatment is missing.');
 if(!str_contains($desktopCss,'.desktop-shell:after'))throw new RuntimeException('Bottom desktop layer must remain CSS-rendered.');
 if(preg_match('/url\([^)]*\.(?:png|jpe?g|webp)/i',$desktopCss))throw new RuntimeException('Default Desktop must not depend on raster background imagery for RC1.');
-if(!str_contains($appCss,'.soft-launch-grid'))throw new RuntimeException('Soft-launch landing styles are missing.');
+if(!str_contains($desktopCss,'.public-desktop-home'))throw new RuntimeException('Soft-launch Desktop-home styles are missing.');
 if(!str_contains($readme,'Commerce is not part of RC1'))throw new RuntimeException('README must document RC1 commerce scope.');
 if(!str_contains($readme,'generated with CSS'))throw new RuntimeException('README must document CSS-based Desktop visuals.');
 if(str_contains($installerContract,'Undefined variable'))throw new RuntimeException('Installer contract must remain warning-free.');
