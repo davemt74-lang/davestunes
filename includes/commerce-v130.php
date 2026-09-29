@@ -18,6 +18,15 @@ function dt_commerce_currency(string $value): string
     return $value;
 }
 
+function dt_commerce_parse_price_to_cents(string $value): int
+{
+    $value=trim($value);
+    if(!preg_match('/^(\d{1,9})(?:\.(\d{1,2}))?$/',$value,$m))throw new RuntimeException('Price must be a positive amount with up to two decimal places.');
+    $whole=(int)$m[1];
+    $fraction=str_pad((string)($m[2]??''),2,'0');
+    return ($whole*100)+(int)$fraction;
+}
+
 function dt_commerce_sku(string $value): string
 {
     $value=strtoupper(trim($value));
@@ -47,7 +56,7 @@ function dt_commerce_resource(PDO $pdo,string $type,int $id): ?array
     }elseif($type==='edition'){
         $stmt=$pdo->prepare("SELECT e.id,r.artist_id,CONCAT(r.title,' — ',e.edition_name) title,
             CASE WHEN e.edition_status='active' THEN r.release_status ELSE 'inactive' END status,
-            r.id release_id,e.grants_digital_access
+            r.id release_id,e.grants_digital_access,e.edition_format
             FROM music_release_editions_v110 e
             INNER JOIN music_releases_v110 r ON r.id=e.release_id
             WHERE e.id=? LIMIT 1");
@@ -61,7 +70,11 @@ function dt_commerce_resource_sellable(PDO $pdo,string $type,int $id,int $artist
 {
     $resource=dt_commerce_resource($pdo,$type,$id);
     if(!$resource||(int)$resource['artist_id']!==$artistId)return false;
-    if($type==='release'||$type==='edition')return (string)$resource['status']==='published';
+    if($type==='release')return (string)$resource['status']==='published';
+    if($type==='edition'){
+        if(!in_array((string)($resource['edition_format']??''),['digital','deluxe-digital'],true))return false;
+        return (string)$resource['status']==='published';
+    }
     if($type==='recording'){
         if((string)$resource['status']!=='active')return false;
         $stmt=$pdo->prepare("SELECT 1 FROM music_release_tracks_v110 rt
@@ -115,7 +128,8 @@ function dt_commerce_create_offer(PDO $pdo,int $artistId,array $user,array $inpu
     $starts=dt_commerce_datetime($input['sale_starts_at']??null);
     $ends=dt_commerce_datetime($input['sale_ends_at']??null);
     if($starts!==null&&$ends!==null&&$ends<=$starts)throw new RuntimeException('Sale end must be after sale start.');
-    if($status==='active'&&!dt_commerce_resource_sellable($pdo,$resourceType,$resourceId,$artistId))throw new RuntimeException('Only published music can have an active offer.');
+    if($status==='active'&&$price<1)throw new RuntimeException('Active purchase offers must have a positive price.');
+    if($status==='active'&&!dt_commerce_resource_sellable($pdo,$resourceType,$resourceId,$artistId))throw new RuntimeException('Only published digital music can have an active offer.');
 
     try{
         $stmt=$pdo->prepare("INSERT INTO music_offers_v130
@@ -135,7 +149,8 @@ function dt_commerce_set_offer_status(PDO $pdo,int $artistId,int $offerId,string
     if(!in_array($status,dt_commerce_offer_statuses(),true))throw new RuntimeException('Offer status is invalid.');
     $offer=dt_commerce_offer($pdo,$offerId);
     if(!$offer||(int)$offer['artist_id']!==$artistId)throw new RuntimeException('Offer was not found.');
-    if($status==='active'&&!dt_commerce_resource_sellable($pdo,(string)$offer['resource_type'],(int)$offer['resource_id'],$artistId))throw new RuntimeException('Only published music can have an active offer.');
+    if($status==='active'&&(int)$offer['price_cents']<1)throw new RuntimeException('Active purchase offers must have a positive price.');
+    if($status==='active'&&!dt_commerce_resource_sellable($pdo,(string)$offer['resource_type'],(int)$offer['resource_id'],$artistId))throw new RuntimeException('Only published digital music can have an active offer.');
     $pdo->prepare('UPDATE music_offers_v130 SET offer_status=?,updated_at=NOW() WHERE id=? AND artist_id=?')->execute([$status,$offerId,$artistId]);
 }
 
@@ -160,6 +175,49 @@ function dt_commerce_public_offers(PDO $pdo,int $limit=100): array
         ORDER BY o.updated_at DESC,o.id DESC LIMIT ".$limit;
     $rows=$pdo->query($sql)->fetchAll()?:[];
     return array_values(array_filter($rows,static fn(array $row):bool=>dt_commerce_resource_sellable($pdo,(string)$row['resource_type'],(int)$row['resource_id'],(int)$row['artist_id'])));
+}
+
+function dt_commerce_user_owns_resource(PDO $pdo,int $userId,string $resourceType,int $resourceId): bool
+{
+    if($userId<1||$resourceId<1)return false;
+    $active=dt_entitlement_active_clause('e');
+    if($resourceType==='edition'){
+        $stmt=$pdo->prepare("SELECT 1 FROM music_entitlements_v120 e
+            WHERE e.user_id=? AND e.resource_type='edition' AND e.resource_id=?
+              AND e.entitlement_type='own' AND {$active} LIMIT 1");
+        $stmt->execute([$userId,$resourceId]);
+        return (bool)$stmt->fetchColumn();
+    }
+    if($resourceType==='release'){
+        $stmt=$pdo->prepare("SELECT 1 FROM music_entitlements_v120 e
+            WHERE e.user_id=? AND e.entitlement_type='own' AND {$active} AND (
+                (e.resource_type='release' AND e.resource_id=?)
+                OR (e.resource_type='edition' AND EXISTS (
+                    SELECT 1 FROM music_release_editions_v110 ed
+                    WHERE ed.id=e.resource_id AND ed.release_id=? AND ed.grants_digital_access=1
+                ))
+            ) LIMIT 1");
+        $stmt->execute([$userId,$resourceId,$resourceId]);
+        return (bool)$stmt->fetchColumn();
+    }
+    if($resourceType==='recording'){
+        $stmt=$pdo->prepare("SELECT 1 FROM music_entitlements_v120 e
+            WHERE e.user_id=? AND e.entitlement_type='own' AND {$active} AND (
+                (e.resource_type='recording' AND e.resource_id=?)
+                OR (e.resource_type='release' AND EXISTS (
+                    SELECT 1 FROM music_release_tracks_v110 rt
+                    WHERE rt.release_id=e.resource_id AND rt.recording_id=?
+                ))
+                OR (e.resource_type='edition' AND EXISTS (
+                    SELECT 1 FROM music_release_editions_v110 ed
+                    INNER JOIN music_release_tracks_v110 rt ON rt.release_id=ed.release_id
+                    WHERE ed.id=e.resource_id AND ed.grants_digital_access=1 AND rt.recording_id=?
+                ))
+            ) LIMIT 1");
+        $stmt->execute([$userId,$resourceId,$resourceId,$resourceId]);
+        return (bool)$stmt->fetchColumn();
+    }
+    return false;
 }
 
 function dt_commerce_order(PDO $pdo,int $orderId): ?array
@@ -253,7 +311,8 @@ function dt_commerce_prepare_order(PDO $pdo,array $user,array $offerIds,string $
         foreach($ids as $id){
             $offer=$offers[$id];
             if(!dt_commerce_offer_available($offer)||!dt_commerce_resource_sellable($pdo,(string)$offer['resource_type'],(int)$offer['resource_id'],(int)$offer['artist_id']))throw new RuntimeException('One or more offers are not available.');
-            if($currency==='' )$currency=(string)$offer['currency'];
+            if((string)$offer['grants_entitlement_type']==='own'&&dt_commerce_user_owns_resource($pdo,$userId,(string)$offer['resource_type'],(int)$offer['resource_id']))throw new RuntimeException('You already own one or more items in this checkout.');
+            if($currency==='')$currency=(string)$offer['currency'];
             if($currency!==(string)$offer['currency'])throw new RuntimeException('A checkout cannot mix currencies.');
             $subtotal+=(int)$offer['price_cents'];
         }
@@ -333,7 +392,7 @@ function dt_commerce_capture_payment(
 
     $existingEvent=dt_commerce_payment_event($pdo,$provider,$eventKey);
     if($existingEvent){
-        if((int)$existingEvent['order_id']!==$orderId||(string)$existingEvent['event_type']!=='payment.succeeded'||(int)$existingEvent['amount_cents']!==$amountCents||(string)$existingEvent['currency']!==$currency||(string)$existingEvent['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
+        if((int)$existingEvent['order_id']!==$orderId||(string)$existingEvent['event_type']!=='payment.succeeded'||(int)$existingEvent['amount_cents']!==$amountCents||(string)$existingEvent['currency']!==$currency||(string)$existingEvent['provider_payment_ref']!==$paymentRef||(string)$existingEvent['payload_hash']!==$payloadHash)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
         return dt_commerce_order($pdo,$orderId)??throw new RuntimeException('Order was not found.');
     }
 
@@ -345,7 +404,7 @@ function dt_commerce_capture_payment(
         if(!$order)throw new RuntimeException('Order was not found.');
         $lockedEvent=dt_commerce_payment_event($pdo,$provider,$eventKey);
         if($lockedEvent){
-            if((int)$lockedEvent['order_id']!==$orderId||(string)$lockedEvent['event_type']!=='payment.succeeded'||(int)$lockedEvent['amount_cents']!==$amountCents||(string)$lockedEvent['currency']!==$currency||(string)$lockedEvent['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
+            if((int)$lockedEvent['order_id']!==$orderId||(string)$lockedEvent['event_type']!=='payment.succeeded'||(int)$lockedEvent['amount_cents']!==$amountCents||(string)$lockedEvent['currency']!==$currency||(string)$lockedEvent['provider_payment_ref']!==$paymentRef||(string)$lockedEvent['payload_hash']!==$payloadHash)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
             if($ownsTransaction)$pdo->commit();
             return $order;
         }
@@ -428,10 +487,15 @@ function dt_commerce_refund_order(
 ): array {
     $provider=strtolower(trim($provider));
     $eventKey=trim($eventKey);
+    $paymentRef=trim($paymentRef);
     $currency=dt_commerce_currency($currency);
+    $payloadHash=trim($payloadHash);
+    if($provider===''||strlen($provider)>40||$eventKey===''||mb_strlen($eventKey)>190||$paymentRef===''||mb_strlen($paymentRef)>190)throw new RuntimeException('Refund provider identifiers are required.');
+    if($amountCents<0)throw new RuntimeException('Refund amount is invalid.');
+    if($payloadHash!==''&&!preg_match('/^[a-f0-9]{64}$/i',$payloadHash))throw new RuntimeException('Payment payload hash is invalid.');
     $existingEvent=dt_commerce_payment_event($pdo,$provider,$eventKey);
     if($existingEvent){
-        if((int)$existingEvent['order_id']!==$orderId||(string)$existingEvent['event_type']!=='refund.succeeded'||(int)$existingEvent['amount_cents']!==$amountCents||(string)$existingEvent['currency']!==$currency)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
+        if((int)$existingEvent['order_id']!==$orderId||(string)$existingEvent['event_type']!=='refund.succeeded'||(int)$existingEvent['amount_cents']!==$amountCents||(string)$existingEvent['currency']!==$currency||(string)$existingEvent['provider_payment_ref']!==$paymentRef||(string)$existingEvent['payload_hash']!==$payloadHash)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
         return dt_commerce_order($pdo,$orderId)??throw new RuntimeException('Order was not found.');
     }
 
@@ -443,7 +507,7 @@ function dt_commerce_refund_order(
         if(!$order)throw new RuntimeException('Order was not found.');
         $lockedEvent=dt_commerce_payment_event($pdo,$provider,$eventKey);
         if($lockedEvent){
-            if((int)$lockedEvent['order_id']!==$orderId||(string)$lockedEvent['event_type']!=='refund.succeeded'||(int)$lockedEvent['amount_cents']!==$amountCents||(string)$lockedEvent['currency']!==$currency||(string)$lockedEvent['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
+            if((int)$lockedEvent['order_id']!==$orderId||(string)$lockedEvent['event_type']!=='refund.succeeded'||(int)$lockedEvent['amount_cents']!==$amountCents||(string)$lockedEvent['currency']!==$currency||(string)$lockedEvent['provider_payment_ref']!==$paymentRef||(string)$lockedEvent['payload_hash']!==$payloadHash)throw new RuntimeException('Payment event idempotency key conflicts with existing history.');
             if($ownsTransaction)$pdo->commit();
             return $order;
         }
@@ -452,8 +516,6 @@ function dt_commerce_refund_order(
         if((string)$order['payment_provider']!==$provider||(string)$order['provider_payment_ref']!==$paymentRef)throw new RuntimeException('Refund does not match the captured payment.');
         if((int)$order['total_cents']!==$amountCents||(string)$order['currency']!==$currency)throw new RuntimeException('V1 refunds must match the full order total.');
 
-        $payloadHash=trim($payloadHash);
-        if($payloadHash!==''&&!preg_match('/^[a-f0-9]{64}$/i',$payloadHash))throw new RuntimeException('Payment payload hash is invalid.');
         $pdo->prepare("INSERT INTO music_payment_events_v130
             (order_id,provider,provider_event_key,provider_payment_ref,event_type,amount_cents,currency,payload_hash)
             VALUES (?,?,?,?, 'refund.succeeded',?,?,?)")->execute([$orderId,$provider,$eventKey,$paymentRef,$amountCents,$currency,$payloadHash]);
