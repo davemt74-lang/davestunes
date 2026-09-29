@@ -185,7 +185,8 @@
     layer?.setAttribute('aria-hidden','false');
     const stage=document.querySelector('[data-zscroll-stage]');
     stage?.setAttribute('aria-hidden','false');
-    loadData().catch(()=>{});
+    if(desktop.state.experienceDataMode!=='authored-only')loadData().catch(()=>{});
+    else renderScenes();
     updateSceneStyles();
     ensureAnimation();
     desktop.emit('zscroll-enter',{source,progress:state.progress});
