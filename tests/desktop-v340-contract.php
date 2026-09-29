@@ -47,6 +47,7 @@ foreach([$album,$artist] as $surface){
 }
 
 if(!str_contains($boot,"credentials:'omit'"))throw new RuntimeException('Public bootstrap must fetch immutable delivery without credentials.');
+if(!str_contains($boot,"cache:'reload'"))throw new RuntimeException('Public bootstrap must recover from a bare conditional 304 response.');
 if(!str_contains($boot,'expectedHash'))throw new RuntimeException('Public bootstrap must pin the expected hash.');
 if(!str_contains($boot,'expectedVersion'))throw new RuntimeException('Public bootstrap must pin the expected version.');
 if(!str_contains($boot,"experienceDataMode='authored-only'"))throw new RuntimeException('Public bootstrap must enable authored-only data mode.');
