@@ -40,7 +40,7 @@ catalog_has($catalog,'have a frozen track list','Published release composition m
 catalog_has($catalog,'dt_catalog_publish_release','Publishing gate is missing.');
 catalog_has($catalog,'at least one active recording','Empty release publish guard is missing.');
 catalog_has($catalog,'music_catalog_events_v110','Catalog mutations must be auditable.');
-catalog_has($catalog,"dt_artist_can($pdo,$artistId,$userId,$capability)",'Catalog authority must use artist-role capabilities.');
+catalog_has($catalog,'dt_artist_can($pdo,$artistId,$userId,$capability)','Catalog authority must use artist-role capabilities.');
 catalog_not($catalog,'password_hash','Catalog must not create another identity/auth system.');
 
 catalog_has($bootstrap,"require_once __DIR__.'/music-catalog-schema-v110.php';",'Catalog schema must load in bootstrap.');
