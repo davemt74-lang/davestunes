@@ -220,6 +220,46 @@ function dt_commerce_user_owns_resource(PDO $pdo,int $userId,string $resourceTyp
     return false;
 }
 
+function dt_commerce_resources_overlap(PDO $pdo,array $left,array $right): bool
+{
+    $leftType=(string)$left['resource_type'];$leftId=(int)$left['resource_id'];
+    $rightType=(string)$right['resource_type'];$rightId=(int)$right['resource_id'];
+    if($leftType===$rightType&&$leftId===$rightId)return true;
+
+    $releaseFor=static function(PDO $pdo,string $type,int $id): int {
+        if($type==='release')return $id;
+        if($type==='edition'){
+            $stmt=$pdo->prepare('SELECT release_id FROM music_release_editions_v110 WHERE id=? LIMIT 1');
+            $stmt->execute([$id]);return (int)$stmt->fetchColumn();
+        }
+        return 0;
+    };
+
+    $leftRelease=$releaseFor($pdo,$leftType,$leftId);
+    $rightRelease=$releaseFor($pdo,$rightType,$rightId);
+    if($leftRelease>0&&$rightRelease>0&&$leftRelease===$rightRelease)return true;
+
+    if($leftType==='recording'&&$rightRelease>0){
+        $stmt=$pdo->prepare('SELECT 1 FROM music_release_tracks_v110 WHERE release_id=? AND recording_id=? LIMIT 1');
+        $stmt->execute([$rightRelease,$leftId]);if($stmt->fetchColumn())return true;
+    }
+    if($rightType==='recording'&&$leftRelease>0){
+        $stmt=$pdo->prepare('SELECT 1 FROM music_release_tracks_v110 WHERE release_id=? AND recording_id=? LIMIT 1');
+        $stmt->execute([$leftRelease,$rightId]);if($stmt->fetchColumn())return true;
+    }
+    return false;
+}
+
+function dt_commerce_assert_no_ownership_overlap(PDO $pdo,array $offers): void
+{
+    $owned=array_values(array_filter($offers,static fn(array $offer):bool=>(string)$offer['grants_entitlement_type']==='own'));
+    for($i=0,$count=count($owned);$i<$count;$i++){
+        for($j=$i+1;$j<$count;$j++){
+            if(dt_commerce_resources_overlap($pdo,$owned[$i],$owned[$j]))throw new RuntimeException('Checkout contains overlapping ownership offers.');
+        }
+    }
+}
+
 function dt_commerce_order(PDO $pdo,int $orderId): ?array
 {
     if($orderId<1)return null;
@@ -307,6 +347,7 @@ function dt_commerce_prepare_order(PDO $pdo,array $user,array $offerIds,string $
         $offers=[];foreach($rows as $row)$offers[(int)$row['id']]=$row;
         if(count($offers)!==count($ids))throw new RuntimeException('One or more offers were not found.');
 
+        dt_commerce_assert_no_ownership_overlap($pdo,array_values($offers));
         $currency='';$subtotal=0;
         foreach($ids as $id){
             $offer=$offers[$id];
