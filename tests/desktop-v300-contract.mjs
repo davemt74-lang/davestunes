@@ -24,7 +24,7 @@ assert.match(effects,/applyStack/);
 
 assert.match(runtime,/scene\.settings\?\.effects/);
 assert.match(runtime,/layer\.settings\?\.effects/);
-assert.match(runtime,/data\.experienceLayerKey/);
+assert.match(runtime,/dataset\.experienceLayerKey/);
 assert.match(zscroll,/scene\.effect\.update/);
 assert.match(zscroll,/reducedMotion/);
 
