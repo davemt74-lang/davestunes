@@ -44,6 +44,7 @@
       }
       desktop.state.experienceManifest=json.manifest||null;
       desktop.state.experienceHash=json.sha256||'';
+      desktop.state.experienceDataMode='authored-only';
       desktop.emit('experience-loaded',{
         manifest:desktop.state.experienceManifest,
         sha256:desktop.state.experienceHash,
