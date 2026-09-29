@@ -95,7 +95,24 @@ if((int)$v2row['version_number']!==2||(string)$v2row['version_status']!=='draft'
 $clone=dt_experience_manifest($pdo,$v2);
 if($clone['scenes']!==$published['manifest']['scenes']||$clone['flow']!==$published['manifest']['flow'])throw new RuntimeException('Draft clone did not preserve scene graph.');
 
+dt_experience_scene_update($pdo,$v2,$owner,'intro',['title'=>'Intro Revised','weight'=>3]);
+dt_experience_layer_update($pdo,$v2,$owner,'intro','copy',['settings'=>['text'=>'Draft-only revision.']]);
 dt_experience_scene_add($pdo,$v2,$owner,['scene_key'=>'encore','title'=>'Encore','sort_order'=>30,'weight'=>1,'is_enabled'=>true]);
+dt_experience_layer_add($pdo,$v2,$owner,['scene_key'=>'encore','layer_key'=>'temp','layer_type'=>'text','settings'=>['text'=>'temporary']]);
+dt_experience_layer_delete($pdo,$v2,$owner,'encore','temp');
+dt_experience_node_add($pdo,$v2,$owner,['node_key'=>'temp-a','node_type'=>'trigger','scene_key'=>'encore']);
+dt_experience_node_add($pdo,$v2,$owner,['node_key'=>'temp-b','node_type'=>'action','scene_key'=>'encore']);
+dt_experience_edge_add($pdo,$v2,$owner,['edge_key'=>'temp-edge','from_node_key'=>'temp-a','to_node_key'=>'temp-b']);
+$guarded=false;
+try{dt_experience_node_delete($pdo,$v2,$owner,'temp-a');}catch(RuntimeException $e){$guarded=true;}
+if(!$guarded)throw new RuntimeException('Connected flow node was deleted without removing its edge.');
+dt_experience_edge_update($pdo,$v2,$owner,'temp-edge',['condition'=>['when'=>'always']]);
+dt_experience_edge_delete($pdo,$v2,$owner,'temp-edge');
+dt_experience_node_delete($pdo,$v2,$owner,'temp-a');
+dt_experience_node_delete($pdo,$v2,$owner,'temp-b');
+dt_experience_scene_delete($pdo,$v2,$owner,'encore');
+$draftAfterMutations=dt_experience_manifest($pdo,$v2);
+if($draftAfterMutations['scenes'][0]['title']!=='Intro Revised'||($draftAfterMutations['scenes'][0]['layers'][1]['settings']['text']??'')!=='Draft-only revision.')throw new RuntimeException('Draft update mutations were not persisted.');
 $activeStill=dt_experience_active($pdo,'release',(int)$release['id']);
 if($activeStill['sha256']!==$published['sha256']||count($activeStill['manifest']['scenes'])!==2)throw new RuntimeException('Draft edits changed the active published manifest.');
 
@@ -112,6 +129,6 @@ if(dt_experience_public_allowed($pdo,'user',(int)$other['id'],$owner))throw new 
 if(!dt_experience_public_allowed($pdo,'user',(int)$other['id'],$other))throw new RuntimeException('User could not access their own experience.');
 
 $eventCount=(int)$pdo->query('SELECT COUNT(*) FROM experience_events_v280 WHERE experience_id='.(int)$experienceId)->fetchColumn();
-if($eventCount<8)throw new RuntimeException('Experience audit trail is incomplete.');
+if($eventCount<14)throw new RuntimeException('Experience audit trail is incomplete.');
 
 echo "MUSIC_DESKTOP_V1_SECTION9_MYSQL=PASS\n";
