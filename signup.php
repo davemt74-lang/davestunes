@@ -2,14 +2,14 @@
 declare(strict_types=1);
 if(!is_file(__DIR__.'/config.php')){header('Location: /install.php');exit;}
 require __DIR__.'/includes/bootstrap.php';
-if(dt_current_user())dt_redirect('/dashboard.php');
+if(dt_current_user())dt_redirect('/desktop.php');
 $error=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
     try{
         dt_verify_csrf();
         $user=dt_auth_register(dt_db(),(string)($_POST['email']??''),(string)($_POST['password']??''),(string)($_POST['display_name']??''));
         dt_auth_begin_session($user);
-        dt_redirect('/dashboard.php');
+        dt_redirect('/desktop.php');
     }catch(Throwable $e){$error=$e->getMessage();}
 }
 dt_page_header('Create account');

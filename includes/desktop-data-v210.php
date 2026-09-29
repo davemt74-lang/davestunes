@@ -485,3 +485,25 @@ function dt_desktop_data_payload(PDO $pdo,array $user,string $view,string $query
         ],
     ];
 }
+
+
+function dt_desktop_personalization_state(PDO $pdo,int $userId): string
+{
+    if($userId<1)return 'default';
+    $checks=[
+        ['desktop_objects_v220','user_id'],
+        ['user_saved_releases_v120','user_id'],
+        ['user_saved_recordings_v120','user_id'],
+        ['user_artist_follows_v120','user_id'],
+        ['music_playlists_v120','user_id'],
+        ['music_crates_v120','user_id'],
+        ['playback_listens_v130','user_id'],
+    ];
+    foreach($checks as [$table,$column]){
+        if(!dt_table_exists($pdo,$table))continue;
+        $stmt=$pdo->prepare("SELECT 1 FROM {$table} WHERE {$column}=? LIMIT 1");
+        $stmt->execute([$userId]);
+        if($stmt->fetchColumn())return 'personalized';
+    }
+    return 'starter';
+}

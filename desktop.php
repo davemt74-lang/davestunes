@@ -4,10 +4,12 @@ require __DIR__.'/includes/bootstrap.php';
 
 $pdo=dt_db();
 $user=dt_require_user($pdo);
+$personalizationState=dt_desktop_personalization_state($pdo,(int)$user['id']);
 $boot=[
     'version'=>'music-desktop-v1-section15',
     'release'=>dt_release_version(),
     'releaseChannel'=>dt_release_channel(),
+    'personalizationState'=>$personalizationState,
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -39,7 +41,13 @@ if($bootJson===false)$bootJson='{}';
   <link rel="stylesheet" href="/assets/desktop/desktop.css">
 </head>
 <body class="desktop-page">
-  <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop">
+  <div class="desktop-splash" data-desktop-splash data-splash-mode="desktop" role="status" aria-live="polite">
+    <div class="desktop-splash-mark" aria-hidden="true"><span></span><span></span></div>
+    <strong>Dave's Tunes</strong>
+    <span>Setting the needle…</span>
+    <div class="desktop-splash-progress" aria-hidden="true"><i></i></div>
+  </div>
+  <main id="dt-desktop-root" class="desktop-shell" data-default-template="midnight-desk" data-desktop-mode="desktop" data-personalization-state="<?=dt_e($personalizationState)?>">
     <script type="application/json" id="dt-desktop-boot"><?=$bootJson?></script>
 
     <div class="desktop-topbar">
@@ -125,6 +133,7 @@ if($bootJson===false)$bootJson='{}';
   </main>
 
   <?php dt_player_dock(); ?>
+  <script src="/assets/desktop/loading-splash.js"></script>
   <script src="/assets/desktop/desktop-core.js"></script>
   <script src="/assets/desktop/template-midnight.js"></script>
   <script src="/assets/desktop/module-player-bridge.js"></script>

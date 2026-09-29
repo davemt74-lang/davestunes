@@ -83,7 +83,11 @@
 
     const shell=el('div','featured-desktop-shell');
     const heading=el('div','featured-desktop-heading');
-    heading.append(el('strong','','Featured'),el('span','','Discovery · your saved Desktop stays yours'));
+    const starter=ctx.root?.dataset?.personalizationState==='starter';
+    heading.append(
+      el('strong','',starter?'Start here':'Featured'),
+      el('span','',starter?'Featured music while your Desktop learns what you like':'Discovery · your saved Desktop stays yours')
+    );
     const rail=el('div','featured-desktop-rail');
     for(const item of items)rail.append(renderItem(item,ctx));
     shell.append(heading,rail);
