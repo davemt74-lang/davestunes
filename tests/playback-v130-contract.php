@@ -44,14 +44,17 @@ playback_has($runtime,'dt_playback_begin_listen','Listening-history start is mis
 playback_has($runtime,'$elapsedMs+5000','Listening credit must be bounded by server-observed elapsed time.');
 playback_has($runtime,'min(120000','Listening heartbeat must have a hard credit ceiling.');
 playback_has($media,'HTTP_RANGE','Protected media endpoint must support range requests.');
+playback_has($media,"(int)$selected['asset']['id']!==$requestedAssetId",'Stream requests must be pinned to the currently authorized asset.');
 playback_has($media,'Cache-Control: private, no-store','Protected media must not be publicly cached.');
 playback_not($media,'storage_key]','Protected storage keys must not be emitted as response metadata.');
 playback_has($api,'dt_verify_csrf();','Player mutations must be CSRF-protected.');
-playback_has($api,"'Authentication required.'", 'Player API must return a JSON authentication error.');
+playback_has($api,"'Authentication required.'",'Player API must return a JSON authentication error.');
+playback_has($api,"'Player service is temporarily unavailable.'",'Unexpected player failures must not leak internals.');
 playback_has($js,'window.DaveTunesPlayer','Frontend needs one canonical player command surface.');
 playback_has($js,"davestunes:player:",'Player must expose an event bus for future surfaces.');
 playback_has($js,'new Audio()','Player must own a single audio engine.');
 playback_has($js,'davestunes.player.session','Player session identity must persist in the browser.');
+playback_has($js,'catch (_)','Player must tolerate unavailable browser storage.');
 playback_has($js,'expected_queue_revision','Frontend queue writes must use optimistic revision checks.');
 playback_has($bootstrap,"require_once __DIR__.'/playback-schema-v130.php';",'Playback schema must load in bootstrap.');
 playback_has($bootstrap,"require_once __DIR__.'/playback-v130.php';",'Playback runtime must load in bootstrap.');
