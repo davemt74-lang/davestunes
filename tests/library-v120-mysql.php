@@ -50,10 +50,16 @@ if(count(dt_library_followed_artists($pdo,(int)$listener['id']))!==1)throw new R
 $crate=dt_library_create_crate($pdo,(int)$listener['id'],'Late Night');
 dt_library_add_to_crate($pdo,(int)$listener['id'],(int)$crate['id'],'release',(int)$release['id']);
 if((int)$pdo->query('SELECT COUNT(*) FROM music_crate_items_v120')->fetchColumn()!==1)throw new RuntimeException('Crate item was not stored.');
+dt_library_remove_from_crate($pdo,(int)$listener['id'],(int)$crate['id'],'release',(int)$release['id']);
+if((int)$pdo->query('SELECT COUNT(*) FROM music_crate_items_v120')->fetchColumn()!==0)throw new RuntimeException('Crate item correction failed.');
+dt_library_add_to_crate($pdo,(int)$listener['id'],(int)$crate['id'],'release',(int)$release['id']);
 
 $playlist=dt_library_create_playlist($pdo,(int)$listener['id'],'Night Drive');
 dt_library_add_to_playlist($pdo,(int)$listener['id'],(int)$playlist['id'],(int)$recording['id']);
 if((int)$pdo->query('SELECT COUNT(*) FROM music_playlist_recordings_v120')->fetchColumn()!==1)throw new RuntimeException('Playlist recording was not stored.');
+dt_library_remove_from_playlist($pdo,(int)$listener['id'],(int)$playlist['id'],(int)$recording['id']);
+if((int)$pdo->query('SELECT COUNT(*) FROM music_playlist_recordings_v120')->fetchColumn()!==0)throw new RuntimeException('Playlist correction failed.');
+dt_library_add_to_playlist($pdo,(int)$listener['id'],(int)$playlist['id'],(int)$recording['id']);
 
 $grant=dt_entitlement_grant($pdo,[
     'grant_key'=>'purchase:order-100:item-1',
@@ -88,6 +94,7 @@ try{
         'resource_id'=>(int)$release['id'],
         'entitlement_type'=>'own',
         'source_type'=>'purchase',
+        'source_ref'=>'different-order',
     ]);
     throw new RuntimeException('Conflicting entitlement replay was accepted.');
 }catch(RuntimeException $e){
@@ -109,6 +116,7 @@ $editionGrant=dt_entitlement_grant($pdo,[
 ]);
 if(!dt_entitlement_user_has_release($pdo,(int)$listener['id'],(int)$release['id']))throw new RuntimeException('Digital edition did not project release access.');
 if(!dt_entitlement_user_has_recording($pdo,(int)$listener['id'],(int)$recording['id']))throw new RuntimeException('Digital edition did not project recording access.');
+if(count(dt_library_owned_releases($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Edition ownership did not project into the owned library.');
 
 $expired=dt_entitlement_grant($pdo,[
     'grant_key'=>'promo:expired',
@@ -117,6 +125,7 @@ $expired=dt_entitlement_grant($pdo,[
     'resource_id'=>(int)$release['id'],
     'entitlement_type'=>'access',
     'source_type'=>'promotion',
+    'source_ref'=>'expired-promo',
     'starts_at'=>'2020-01-01 00:00:00',
     'ends_at'=>'2020-01-02 00:00:00',
 ]);
