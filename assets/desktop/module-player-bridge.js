@@ -40,6 +40,7 @@
     const currentId=Number(current?.id||0);
     const currentIndex=queue.findIndex(item=>item.recordingId===currentId);
     const sourceItem=currentIndex>=0?queue[currentIndex]:null;
+    const canonicalSource=p.state?.source||null;
     const duration=Number.isFinite(p.audio?.duration)&&p.audio.duration>0?p.audio.duration:0;
     const position=duration>0?Math.max(0,Math.min(duration,Number(p.audio?.currentTime||0))):Math.max(0,Number(p.audio?.currentTime||0));
     const progress=duration>0?Math.max(0,Math.min(1,position/duration)):0;
@@ -57,8 +58,8 @@
       progress,
       volume,
       source:Object.freeze({
-        type:String(sourceItem?.sourceType||''),
-        id:sourceItem?.sourceId??null
+        type:String(canonicalSource?.type||sourceItem?.sourceType||''),
+        id:canonicalSource?.id??sourceItem?.sourceId??null
       }),
       canPrevious:Boolean(current),
       canNext:queue.length>0
