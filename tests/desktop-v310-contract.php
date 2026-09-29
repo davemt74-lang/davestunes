@@ -41,6 +41,6 @@ if(!str_contains($boot,"zscroll.enter"))throw new RuntimeException('Album experi
 if(!str_contains($service,'dt_experience_owner_context'))throw new RuntimeException('Album owner context helper is missing.');
 if(!str_contains($workflow,'php tests/desktop-v310-contract.php'))throw new RuntimeException('Section 12 contract is not wired into CI.');
 if(!str_contains($workflow,'php tests/desktop-v310-mysql.php'))throw new RuntimeException('Section 12 MySQL gate is not wired into CI.');
-if(!str_contains($workflow,'node --check assets/album-experience.js'))throw new RuntimeException('Album experience JS syntax gate is not wired into CI.');
+if(!str_contains($workflow,'node --check assets/public-experience.js'))throw new RuntimeException('Shared public experience JS syntax gate is not wired into CI.');
 
 echo "MUSIC_DESKTOP_V1_SECTION12_CONTRACT=PASS\n";
