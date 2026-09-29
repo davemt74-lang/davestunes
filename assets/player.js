@@ -37,6 +37,7 @@
     playToken: null,
     lastHeartbeatAt: 0,
     volume: 1,
+    source: { type: '', id: null },
     ready: false,
   };
 
@@ -73,6 +74,10 @@
     state.queueRevision = Number(json.session?.queue_revision || 0);
     state.volume = Math.max(0, Math.min(1, Number(json.session?.volume ?? 1)));
     state.current = json.current?.stream_url ? json.current : null;
+    state.source = {
+      type: String(json.session?.last_source_type || ''),
+      id: json.session?.last_source_id == null ? null : Number(json.session.last_source_id)
+    };
     audio.volume = state.volume;
 
     if (state.current?.stream_url) {
@@ -178,6 +183,12 @@
     });
     if (!begun.current?.stream_url) throw new Error('No playable media is available.');
     state.current = begun.current;
+    if (options.sourceType && options.sourceType !== 'resume') {
+      state.source = {
+        type: String(options.sourceType),
+        id: options.sourceId == null ? null : Number(options.sourceId)
+      };
+    }
     state.playToken = playToken;
     state.lastHeartbeatAt = Date.now();
     return begun.current;
@@ -222,6 +233,10 @@
     });
     state.queue = result.queue || [];
     state.queueRevision = Number(result.session?.queue_revision || state.queueRevision + 1);
+    state.source = {
+      type: String(options.sourceType || ''),
+      id: options.sourceId == null ? null : Number(options.sourceId)
+    };
     emit('queuechange', { queue: state.queue, revision: state.queueRevision });
     return state.queue;
   };
