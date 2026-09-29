@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+if(!is_file(__DIR__.'/config.php')){header('Location: /install.php');exit;}
 require __DIR__.'/includes/bootstrap.php';
 if(dt_current_user())dt_redirect('/dashboard.php');
 $error=null;
