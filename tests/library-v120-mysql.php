@@ -43,6 +43,9 @@ if(dt_entitlement_user_has_recording($pdo,(int)$listener['id'],(int)$recording['
 
 dt_library_save_release($pdo,(int)$listener['id'],(int)$release['id']);
 dt_library_save_recording($pdo,(int)$listener['id'],(int)$recording['id']);
+dt_library_unsave_recording($pdo,(int)$listener['id'],(int)$recording['id']);
+if((int)$pdo->query('SELECT COUNT(*) FROM user_saved_recordings_v120')->fetchColumn()!==0)throw new RuntimeException('Saved recording removal failed.');
+dt_library_save_recording($pdo,(int)$listener['id'],(int)$recording['id']);
 dt_library_follow_artist($pdo,(int)$listener['id'],$artistId);
 if(count(dt_library_saved_releases($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Saved release was not retained.');
 if(count(dt_library_followed_artists($pdo,(int)$listener['id']))!==1)throw new RuntimeException('Artist follow was not retained.');
@@ -138,10 +141,49 @@ try{
     if($e->getMessage()==='Another user modified a private crate.')throw $e;
 }
 
+$draftRecording=dt_catalog_create_recording($pdo,$artistId,$artistOwner,['title'=>'Before Dawn','isrc'=>'USXYZ2612346','duration_ms'=>198000]);
+$draftRelease=dt_catalog_create_release($pdo,$artistId,$artistOwner,['title'=>'Before Dawn','release_type'=>'single']);
+dt_catalog_add_recording_to_release($pdo,$artistId,(int)$draftRelease['id'],(int)$draftRecording['id'],$artistOwner,1,1);
+try{
+    dt_library_save_release($pdo,(int)$other['id'],(int)$draftRelease['id']);
+    throw new RuntimeException('Private draft release was saved without entitlement.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Private draft release was saved without entitlement.')throw $e;
+}
+$draftGrant=dt_entitlement_grant($pdo,[
+    'grant_key'=>'promo:prerelease-1',
+    'user_id'=>(int)$other['id'],
+    'resource_type'=>'release',
+    'resource_id'=>(int)$draftRelease['id'],
+    'entitlement_type'=>'access',
+    'source_type'=>'promotion',
+    'source_ref'=>'prerelease-1',
+    'granted_by_user_id'=>(int)$artistOwner['id'],
+]);
+if(!dt_entitlement_user_has_release($pdo,(int)$other['id'],(int)$draftRelease['id']))throw new RuntimeException('Pre-release entitlement did not activate.');
+dt_library_save_release($pdo,(int)$other['id'],(int)$draftRelease['id']);
+if(count(dt_library_saved_releases($pdo,(int)$other['id']))!==1)throw new RuntimeException('Entitled private release could not be saved.');
+
+try{
+    dt_entitlement_grant($pdo,[
+        'grant_key'=>'promo:prerelease-1',
+        'user_id'=>(int)$other['id'],
+        'resource_type'=>'release',
+        'resource_id'=>(int)$draftRelease['id'],
+        'entitlement_type'=>'access',
+        'source_type'=>'promotion',
+        'source_ref'=>'prerelease-1',
+        'granted_by_user_id'=>(int)$listener['id'],
+    ]);
+    throw new RuntimeException('Grantor-changing entitlement replay was accepted.');
+}catch(RuntimeException $e){
+    if($e->getMessage()==='Grantor-changing entitlement replay was accepted.')throw $e;
+}
+
 $events=(int)$pdo->query('SELECT COUNT(*) FROM music_entitlement_events_v120')->fetchColumn();
-if($events<4)throw new RuntimeException('Entitlement audit history is incomplete.');
+if($events<5)throw new RuntimeException('Entitlement audit history is incomplete.');
 
 dt_library_ensure_schema($pdo);
-if((int)$pdo->query('SELECT COUNT(*) FROM music_entitlements_v120')->fetchColumn()!==3)throw new RuntimeException('Idempotent library migration changed entitlement data.');
+if((int)$pdo->query('SELECT COUNT(*) FROM music_entitlements_v120')->fetchColumn()!==4)throw new RuntimeException('Idempotent library migration changed entitlement data.');
 
 echo "FOUNDATION_V1_SECTION3_MYSQL=PASS\n";
