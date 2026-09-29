@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section4',
+    'version'=>'music-desktop-v1-section5',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -105,6 +105,7 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/module-player-bridge.js"></script>
   <script src="/assets/desktop/module-library-adapter.js"></script>
   <script src="/assets/desktop/module-object-runtime.js"></script>
+  <script src="/assets/desktop/module-media-objects.js"></script>
   <script src="/assets/desktop/z-scroll-effects.js"></script>
   <script src="/assets/desktop/module-z-scroll.js"></script>
 </body>
