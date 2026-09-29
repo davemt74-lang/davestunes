@@ -9,7 +9,7 @@ const player=read('assets/player.js');
 const css=read('assets/desktop/desktop.css');
 const workflow=read('.github/workflows/foundation-v1.yml');
 
-const v6=page.match(/'version'=>'music-desktop-v1-section(\\d+)'/);
+const v6=page.match(/'version'=>'music-desktop-v1-section(\d+)'/);
 assert.ok(v6&&Number(v6[1])>=6,'Music Desktop boot version must remain at Section 6 or later.');
 assert.match(page, /'turntable'=>true/);
 assert.match(page, /data-turntable/);
