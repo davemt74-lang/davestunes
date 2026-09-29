@@ -12,6 +12,7 @@ $boot=[
     ],
     'capabilities'=>[
         'player'=>true,
+        'dataAdapter'=>true,
         'objects'=>false,
         'turntable'=>false,
         'zScroll'=>false,
@@ -59,7 +60,7 @@ if($bootJson===false)$bootJson='{}';
         </nav>
         <div class="library-canvas" data-desktop-mount="library-content">
           <div class="library-empty">
-            <div><strong>Desktop shell is ready.</strong>The canonical library adapter plugs into this surface in Section 2.</div>
+            <div><strong>Loading your library…</strong>Your canonical albums, artists, songs, crates, and playlists will appear here.</div>
           </div>
         </div>
       </div>
