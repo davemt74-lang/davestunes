@@ -35,8 +35,10 @@
       return;
     }
     try{
-      const response=await fetch(url,{credentials:'omit',headers:{Accept:'application/json'}});
-      if(response.status===304)return;
+      let response=await fetch(url,{credentials:'omit',headers:{Accept:'application/json'}});
+      if(response.status===304){
+        response=await fetch(url,{credentials:'omit',cache:'reload',headers:{Accept:'application/json'}});
+      }
       const json=await response.json();
       if(!response.ok||!json.ok)throw new Error(json.error||'Published experience could not be loaded.');
       if(String(json.sha256||'')!==expectedHash||Number(json.versionNumber||0)!==expectedVersion){
