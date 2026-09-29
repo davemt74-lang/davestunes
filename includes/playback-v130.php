@@ -263,7 +263,7 @@ function dt_playback_can_queue(PDO $pdo,int $userId,int $recordingId): bool
     return dt_playback_access_mode($pdo,$recordingId,$user)!=='none';
 }
 
-function dt_playback_replace_queue(PDO $pdo,int $userId,string $sessionKey,array $recordingIds,string $sourceType='',?int $sourceId=null): array
+function dt_playback_replace_queue(PDO $pdo,int $userId,string $sessionKey,array $recordingIds,string $sourceType='',?int $sourceId=null,?int $expectedRevision=null): array
 {
     $session=dt_playback_session($pdo,$userId,$sessionKey);
     $clean=[];
@@ -280,7 +280,9 @@ function dt_playback_replace_queue(PDO $pdo,int $userId,string $sessionKey,array
     try{
         $lock=$pdo->prepare('SELECT id,queue_revision FROM playback_sessions_v130 WHERE id=? AND user_id=? FOR UPDATE');
         $lock->execute([(int)$session['id'],$userId]);
-        if(!$lock->fetch())throw new RuntimeException('Player session was not found.');
+        $locked=$lock->fetch();
+        if(!$locked)throw new RuntimeException('Player session was not found.');
+        if($expectedRevision!==null&&(int)$locked['queue_revision']!==$expectedRevision)throw new RuntimeException('Player queue changed on another surface. Refresh before replacing it.');
         $pdo->prepare('DELETE FROM playback_queue_items_v130 WHERE session_id=?')->execute([(int)$session['id']]);
         $insert=$pdo->prepare('INSERT INTO playback_queue_items_v130 (session_id,recording_id,queue_position,source_type,source_id) VALUES (?,?,?,?,?)');
         foreach($clean as $position=>$recordingId)$insert->execute([(int)$session['id'],$recordingId,$position,$sourceType,$sourceId]);
@@ -369,7 +371,10 @@ function dt_playback_heartbeat(PDO $pdo,int $userId,string $playToken,int $posit
     $listen=$stmt->fetch();
     if(!$listen)throw new RuntimeException('Listen was not found.');
     $position=max(0,$positionMs);
-    $delta=max(0,min(120000,$listenedDeltaMs));
+    $updatedAt=strtotime((string)$listen['updated_at'])?:time();
+    $elapsedMs=max(0,(time()-$updatedAt)*1000);
+    $creditCap=min(120000,$elapsedMs+5000);
+    $delta=max(0,min($creditCap,$listenedDeltaMs));
     $completeAt=$completed?'NOW()':'completed_at';
     $sql="UPDATE playback_listens_v130 SET last_position_ms=?,listened_ms=listened_ms+?,completed_at={$completeAt},updated_at=NOW() WHERE id=?";
     $pdo->prepare($sql)->execute([$position,$delta,(int)$listen['id']]);
