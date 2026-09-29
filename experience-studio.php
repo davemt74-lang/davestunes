@@ -8,6 +8,7 @@ $ownerType=(string)($_GET['owner_type']??'user');
 $ownerId=(int)($_GET['owner_id']??($ownerType==='user'?(int)$user['id']:0));
 $key=(string)($_GET['key']??'default');
 $experience=dt_experience_find_for_owner($pdo,$ownerType,$ownerId,$key);
+$ownerContext=dt_experience_owner_context($pdo,$ownerType,$ownerId);
 $error=null;
 
 if(!$experience&&($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
@@ -28,10 +29,11 @@ dt_page_header('Experience Studio');
   <header class="experience-studio-header">
     <div>
       <span class="eyebrow">Music Desktop V1</span>
-      <h1>Experience Studio</h1>
-      <p>Build scenes, arrange the film-strip, connect flow nodes, preview, and publish one canonical experience graph.</p>
+      <h1><?=dt_e((string)($ownerContext['title']??'Experience Studio'))?></h1>
+      <p><?=dt_e((string)($ownerContext['subtitle']??'Build scenes, arrange the film-strip, connect flow nodes, preview, and publish one canonical experience graph.'))?></p>
     </div>
     <div class="action-row">
+      <?php if(($ownerContext['back_url']??'')!==''):?><a class="button secondary" href="<?=dt_e((string)$ownerContext['back_url'])?>">Back to Album</a><?php endif;?>
       <a class="button secondary" href="/desktop.php">Desktop</a>
       <a class="button secondary" href="/dashboard.php">Dashboard</a>
     </div>
@@ -44,7 +46,7 @@ dt_page_header('Experience Studio');
       <p>This owner does not have a <code><?=dt_e($key)?></code> experience yet.</p>
       <form method="post" class="stack">
         <?=dt_csrf_field()?>
-        <label>Name<input name="name" maxlength="190" value="My Experience" required></label>
+        <label>Name<input name="name" maxlength="190" value="<?=dt_e((string)($ownerContext['experience_name']??'My Experience'))?>" required></label>
         <button type="submit">Create Experience</button>
       </form>
     </section>
