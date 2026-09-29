@@ -118,6 +118,9 @@ function dt_desktop_data_release_dto(PDO $pdo,int $userId,array $user,array $rel
         'available'=>$accessState==='available',
         'saved'=>$saved,
         'trackCount'=>count($tracks),
+        'experienceAvailable'=>dt_experience_active($pdo,'release',$releaseId,'default')!==null,
+        'profileUrl'=>'/album.php?release='.$releaseId,
+        'experienceUrl'=>'/album-experience.php?release='.$releaseId,
         'playableTrackIds'=>array_values(array_map(
             static fn(array $track): int => (int)$track['id'],
             array_filter($tracks,static fn(array $track): bool => !empty($track['playable']))
@@ -310,6 +313,9 @@ function dt_desktop_data_artists(PDO $pdo,int $userId,array $user,string $query=
             'verified'=>(string)$row['verification_status']==='verified',
             'profileImageUrl'=>dt_desktop_data_cover_url((string)$row['profile_image_path']),
             'followed'=>isset($followed[$id]),
+            'experienceAvailable'=>dt_experience_active($pdo,'artist',$id,'default')!==null,
+            'profileUrl'=>'/artist.php?artist='.rawurlencode((string)$row['slug']),
+            'experienceUrl'=>'/artist-experience.php?artist='.$id,
         ];
         if(count($items)>=$limit)break;
     }
