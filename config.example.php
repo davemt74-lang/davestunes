@@ -8,6 +8,10 @@ return [
         'env' => getenv('DAVESTUNES_APP_ENV') ?: 'production',
         'key' => getenv('DAVESTUNES_APP_KEY') ?: '',
     ],
+    'admin' => [
+        // Comma-separated emails allowed to access platform administration.
+        'emails' => getenv('DAVESTUNES_ADMIN_EMAILS') ?: '',
+    ],
     'db' => [
         'dsn' => getenv('DAVESTUNES_DB_DSN') ?: 'mysql:host=127.0.0.1;dbname=davestunes;charset=utf8mb4',
         'user' => getenv('DAVESTUNES_DB_USER') ?: '',

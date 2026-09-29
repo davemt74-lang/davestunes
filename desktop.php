@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section7',
+    'version'=>'music-desktop-v1-section8',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -16,6 +16,7 @@ $boot=[
         'objects'=>true,
         'turntable'=>true,
         'unifiedPlayer'=>true,
+        'featuredContent'=>true,
         'zScroll'=>true,
         'flowBuilder'=>false,
     ],
@@ -69,6 +70,8 @@ if($bootJson===false)$bootJson='{}';
       </div>
     </section>
 
+    <section class="desktop-featured-layer" data-desktop-featured aria-label="Featured music" hidden></section>
+
     <section class="desktop-layer desktop-layer-objects" data-desktop-layer="objects" aria-label="Spatial object layer"></section>
 
     <section class="desktop-layer desktop-layer-turntable" data-desktop-layer="turntable" aria-label="Digital vinyl turntable">
@@ -120,6 +123,7 @@ if($bootJson===false)$bootJson='{}';
   <script src="/assets/desktop/template-midnight.js"></script>
   <script src="/assets/desktop/module-player-bridge.js"></script>
   <script src="/assets/desktop/module-library-adapter.js"></script>
+  <script src="/assets/desktop/module-featured-content.js"></script>
   <script src="/assets/desktop/module-object-runtime.js"></script>
   <script src="/assets/desktop/module-media-objects.js"></script>
   <script src="/assets/desktop/module-turntable.js"></script>

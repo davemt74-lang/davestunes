@@ -56,6 +56,7 @@ jobs:
           node --check assets/desktop/module-z-scroll.js
           node --check assets/desktop/module-media-objects.js
           node --check assets/desktop/module-turntable.js
+          node --check assets/desktop/module-featured-content.js
 
       - name: Foundation architecture contract
         run: php tests/foundation-v1-contract.php
@@ -86,6 +87,9 @@ jobs:
 
       - name: Music Desktop V1 Section 7 unified player contract
         run: node tests/desktop-v260-contract.mjs
+
+      - name: Music Desktop V1 Section 8 featured content contract
+        run: node tests/desktop-v270-contract.mjs
 
       - name: Foundation MySQL integration
         env:
@@ -143,6 +147,16 @@ jobs:
           DAVESTUNES_APP_ENV: test
           DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
         run: php tests/desktop-v220-mysql.php
+
+      - name: Music Desktop V1 Section 8 featured content MySQL integration
+        env:
+          DAVESTUNES_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=davestunes_test;charset=utf8mb4
+          DAVESTUNES_DB_USER: root
+          DAVESTUNES_DB_PASS: root
+          DAVESTUNES_APP_ENV: test
+          DAVESTUNES_APP_KEY: ci-test-key-do-not-use-in-production
+          DAVESTUNES_ADMIN_EMAILS: admin@example.com
+        run: php tests/desktop-v270-mysql.php
 
       - name: Music Desktop V1 Section 5 media object MySQL integration
         env:
