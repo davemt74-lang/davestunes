@@ -460,3 +460,43 @@ function dt_experience_public_allowed(PDO $pdo,string $ownerType,int $ownerId,?a
     }
     return $user&&(int)$user['id']===$ownerId;
 }
+
+
+function dt_experience_editor_snapshot(PDO $pdo,int $experienceId,array $user): array
+{
+    $experience=dt_experience_row($pdo,$experienceId);
+    if(!$experience)throw new RuntimeException('Experience was not found.');
+    dt_experience_require_owner($pdo,(string)$experience['owner_type'],(int)$experience['owner_id'],$user);
+    $stmt=$pdo->prepare("SELECT * FROM experience_versions_v280 WHERE experience_id=? ORDER BY version_number DESC,id DESC");
+    $stmt->execute([$experienceId]);
+    $versions=$stmt->fetchAll()?:[];
+    $draft=null;
+    foreach($versions as $version)if((string)$version['version_status']==='draft'){$draft=$version;break;}
+    if(!$draft&&$experience['active_version_id'])$draft=dt_experience_clone_draft($pdo,$experienceId,$user);
+    if(!$draft)throw new RuntimeException('Experience draft could not be resolved.');
+    $manifest=dt_experience_manifest($pdo,(int)$draft['id']);
+    return [
+        'experience'=>[
+            'id'=>(int)$experience['id'],'name'=>(string)$experience['name'],'key'=>(string)$experience['experience_key'],
+            'owner'=>['type'=>(string)$experience['owner_type'],'id'=>(int)$experience['owner_id']],
+            'activeVersionId'=>$experience['active_version_id']!==null?(int)$experience['active_version_id']:null,
+        ],
+        'draft'=>[
+            'id'=>(int)$draft['id'],'number'=>(int)$draft['version_number'],'status'=>(string)$draft['version_status'],
+            'manifest'=>$manifest
+        ],
+        'versions'=>array_map(static fn(array $v): array => [
+            'id'=>(int)$v['id'],'number'=>(int)$v['version_number'],'status'=>(string)$v['version_status'],
+            'sha256'=>(string)($v['manifest_sha256']??''),'publishedAt'=>$v['published_at']!==null?(string)$v['published_at']:null
+        ],$versions)
+    ];
+}
+
+function dt_experience_find_for_owner(PDO $pdo,string $ownerType,int $ownerId,string $key='default'): ?array
+{
+    $ownerType=dt_experience_owner($ownerType);$key=dt_experience_key($key);
+    $stmt=$pdo->prepare('SELECT * FROM experiences_v280 WHERE owner_type=? AND owner_id=? AND experience_key=? LIMIT 1');
+    $stmt->execute([$ownerType,$ownerId,$key]);
+    $row=$stmt->fetch();
+    return is_array($row)?$row:null;
+}
