@@ -30,8 +30,11 @@ function dt_playback_allowed_mimes(): array
 function dt_playback_assert_storage_key(string $key): string
 {
     $key=str_replace('\\','/',trim($key));
-    if($key===''||str_starts_with($key,'/')||str_contains($key,'../')||str_contains($key,'..\\'))throw new RuntimeException('Media storage key is invalid.');
+    if($key===''||str_starts_with($key,'/'))throw new RuntimeException('Media storage key is invalid.');
     if(!preg_match('#^[A-Za-z0-9/_\.\-]+$#',$key))throw new RuntimeException('Media storage key contains unsupported characters.');
+    foreach(explode('/',$key) as $segment){
+        if($segment===''||$segment==='.'||$segment==='..')throw new RuntimeException('Media storage key is invalid.');
+    }
     return $key;
 }
 
@@ -40,6 +43,47 @@ function dt_playback_storage_path(string $key): string
     $key=dt_playback_assert_storage_key($key);
     $root=dt_playback_media_root();
     return $root.DIRECTORY_SEPARATOR.str_replace('/',DIRECTORY_SEPARATOR,$key);
+}
+
+function dt_playback_store_upload(PDO $pdo,int $artistId,int $recordingId,array $user,array $upload,string $role,int $previewStartMs=0,int $previewEndMs=0): array
+{
+    dt_catalog_require_artist($pdo,$artistId,$user,'media');
+    if(!dt_catalog_recording($pdo,$artistId,$recordingId))throw new RuntimeException('Recording was not found.');
+    if(!in_array($role,dt_playback_media_roles(),true))throw new RuntimeException('Media role must be full or preview.');
+    if((int)($upload['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK)throw new RuntimeException('Audio upload did not complete.');
+    $tmp=(string)($upload['tmp_name']??'');
+    if($tmp===''||!is_uploaded_file($tmp))throw new RuntimeException('Audio upload could not be verified.');
+    $bytes=(int)($upload['size']??0);
+    $max=max(1048576,(int)dt_config('storage.max_upload_bytes',536870912));
+    if($bytes<1||$bytes>$max)throw new RuntimeException('Audio upload exceeds the configured size limit.');
+
+    $finfo=new finfo(FILEINFO_MIME_TYPE);
+    $mime=(string)$finfo->file($tmp);
+    $allowed=dt_playback_allowed_mimes();
+    if(!isset($allowed[$mime]))throw new RuntimeException('Unsupported audio file type.');
+    $extension=$allowed[$mime];
+    $key='artist-'.$artistId.'/recording-'.$recordingId.'/'.$role.'-'.bin2hex(random_bytes(16)).'.'.$extension;
+    $path=dt_playback_storage_path($key);
+    $dir=dirname($path);
+    if(!is_dir($dir)&&!mkdir($dir,0770,true)&&!is_dir($dir))throw new RuntimeException('Protected media directory could not be created.');
+    if(!move_uploaded_file($tmp,$path))throw new RuntimeException('Audio upload could not be moved into protected storage.');
+    @chmod($path,0660);
+
+    try{
+        return dt_playback_register_media($pdo,$artistId,$recordingId,$user,[
+            'media_role'=>$role,
+            'storage_driver'=>'local',
+            'storage_key'=>$key,
+            'mime_type'=>$mime,
+            'byte_size'=>(int)filesize($path),
+            'sha256'=>(string)hash_file('sha256',$path),
+            'preview_start_ms'=>$previewStartMs,
+            'preview_end_ms'=>$previewEndMs,
+        ]);
+    }catch(Throwable $e){
+        @unlink($path);
+        throw $e;
+    }
 }
 
 function dt_playback_media_asset(PDO $pdo,int $assetId): ?array
@@ -255,7 +299,8 @@ function dt_playback_replace_queue(PDO $pdo,int $userId,string $sessionKey,array
 function dt_playback_update_state(PDO $pdo,int $userId,string $sessionKey,array $state): array
 {
     $session=dt_playback_session($pdo,$userId,$sessionKey);
-    $recordingId=array_key_exists('recording_id',$state)?max(0,(int)$state['recording_id']):(int)($session['current_recording_id']??0);
+    $hasRecording=array_key_exists('recording_id',$state)&&$state['recording_id']!==null&&$state['recording_id']!=='';
+    $recordingId=$hasRecording?max(0,(int)$state['recording_id']):(int)($session['current_recording_id']??0);
     if($recordingId>0&&!dt_playback_can_queue($pdo,$userId,$recordingId))throw new RuntimeException('Recording is not available for playback.');
 
     $playbackState=(string)($state['playback_state']??$session['playback_state']??'paused');
@@ -294,7 +339,13 @@ function dt_playback_begin_listen(PDO $pdo,int $userId,string $sessionKey,int $r
     $stmt->execute([$playToken]);
     $existing=$stmt->fetch();
     if($existing){
-        if((int)$existing['user_id']!==$userId||(int)$existing['recording_id']!==$recordingId||(int)$existing['session_id']!==(int)$session['id']){
+        if(
+            (int)$existing['user_id']!==$userId
+            ||(int)$existing['recording_id']!==$recordingId
+            ||(int)$existing['session_id']!==(int)$session['id']
+            ||(string)$existing['source_type']!==substr($sourceType,0,30)
+            ||(int)($existing['source_id']??0)!==(int)($sourceId??0)
+        ){
             throw new RuntimeException('Play token conflicts with an existing listen.');
         }
         return $existing;
