@@ -112,12 +112,8 @@ dt_page_header('Admin · Featured Content');
         <label>Priority<input type="number" name="priority" min="-10000" max="10000" value="<?=dt_e((string)$row['priority'])?>"></label>
         <label>Starts<input type="datetime-local" name="starts_at" value="<?=dt_e($row['starts_at']?str_replace(' ','T',substr((string)$row['starts_at'],0,16)):'')?>"></label>
         <label>Ends<input type="datetime-local" name="ends_at" value="<?=dt_e($row['ends_at']?str_replace(' ','T',substr((string)$row['ends_at'],0,16)):'')?>"></label>
-        <div class="actions"><button class="button small" type="submit">Save</button>
+        <div class="actions"><button class="button small" type="submit">Save</button><button class="button small secondary" type="submit" name="action" value="delete" onclick="return confirm('Delete this featured post?')">Delete</button></div>
       </form>
-      <form method="post" onsubmit="return confirm('Delete this featured post?')">
-        <?=dt_csrf_field()?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=dt_e((string)$row['id'])?>">
-        <button class="button small secondary" type="submit">Delete</button>
-      </form></div>
     <?php endforeach; ?>
   </section>
 </main>
