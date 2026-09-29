@@ -156,6 +156,7 @@ function dt_desktop_data_release_map(PDO $pdo,int $userId,array $user,bool $incl
     }
     foreach(dt_library_saved_releases($pdo,$userId) as $release){
         $id=(int)$release['id'];
+        if(!dt_library_release_is_public($pdo,$id)&&!dt_entitlement_user_has_release($pdo,$userId,$id))continue;
         if(isset($map[$id])){
             $map[$id]['saved']=true;
             continue;
@@ -250,6 +251,7 @@ function dt_desktop_data_song_map(PDO $pdo,int $userId,array $user): array
     }
 
     foreach(dt_library_saved_releases($pdo,$userId) as $release){
+        if(!dt_library_release_is_public($pdo,(int)$release['id'])&&!dt_entitlement_user_has_release($pdo,$userId,(int)$release['id']))continue;
         foreach(dt_desktop_data_release_tracks($pdo,$userId,(int)$release['id'],$user) as $track){
             $id=(int)$track['id'];
             if(isset($map[$id]))continue;
@@ -261,6 +263,7 @@ function dt_desktop_data_song_map(PDO $pdo,int $userId,array $user): array
 
     foreach(dt_library_saved_recordings($pdo,$userId) as $recording){
         $id=(int)$recording['id'];
+        if(!dt_library_recording_is_public($pdo,$id)&&!dt_entitlement_user_has_recording($pdo,$userId,$id))continue;
         if(isset($map[$id])){
             $map[$id]['saved']=true;
             continue;
