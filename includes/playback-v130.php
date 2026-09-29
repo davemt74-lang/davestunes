@@ -207,7 +207,7 @@ function dt_playback_recording_payload(PDO $pdo,int $recordingId,?array $user=nu
     if(!$row)return null;
     $selected=dt_playback_select_media($pdo,$recordingId,$user);
     $row['access_mode']=$selected['access_mode']??'none';
-    $row['stream_url']=$selected?'/media.php?recording='.$recordingId:'';
+    $row['stream_url']=$selected?'/media.php?recording='.$recordingId.'&asset='.(int)$selected['asset']['id']:'';
     return $row;
 }
 
@@ -265,6 +265,7 @@ function dt_playback_can_queue(PDO $pdo,int $userId,int $recordingId): bool
 
 function dt_playback_replace_queue(PDO $pdo,int $userId,string $sessionKey,array $recordingIds,string $sourceType='',?int $sourceId=null,?int $expectedRevision=null): array
 {
+    $sourceType=substr(trim($sourceType),0,30);
     $session=dt_playback_session($pdo,$userId,$sessionKey);
     $clean=[];
     foreach($recordingIds as $id){
@@ -312,7 +313,7 @@ function dt_playback_update_state(PDO $pdo,int $userId,string $sessionKey,array 
     $volume=max(0,min(1,$volume));
     $repeat=(string)($state['repeat_mode']??$session['repeat_mode']??'off');
     if(!in_array($repeat,['off','one','all'],true))throw new RuntimeException('Repeat mode is invalid.');
-    $shuffle=!empty($state['shuffle_enabled'])?1:0;
+    $shuffle=array_key_exists('shuffle_enabled',$state)?(!empty($state['shuffle_enabled'])?1:0):(int)($session['shuffle_enabled']??0);
 
     $stmt=$pdo->prepare("UPDATE playback_sessions_v130 SET
         current_recording_id=?,playback_state=?,position_ms=?,volume=?,repeat_mode=?,shuffle_enabled=?,updated_at=NOW()
@@ -330,6 +331,7 @@ function dt_playback_update_state(PDO $pdo,int $userId,string $sessionKey,array 
 function dt_playback_begin_listen(PDO $pdo,int $userId,string $sessionKey,int $recordingId,string $playToken,string $sourceType='',?int $sourceId=null): array
 {
     $playToken=strtolower(trim($playToken));
+    $sourceType=substr(trim($sourceType),0,30);
     if(!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/',$playToken))throw new RuntimeException('Play token must be a UUID v4.');
     $user=dt_auth_user_by_id($pdo,$userId);
     if(!$user)throw new RuntimeException('User was not found.');
@@ -345,7 +347,7 @@ function dt_playback_begin_listen(PDO $pdo,int $userId,string $sessionKey,int $r
             (int)$existing['user_id']!==$userId
             ||(int)$existing['recording_id']!==$recordingId
             ||(int)$existing['session_id']!==(int)$session['id']
-            ||(string)$existing['source_type']!==substr($sourceType,0,30)
+            ||(string)$existing['source_type']!==$sourceType
             ||(int)($existing['source_id']??0)!==(int)($sourceId??0)
         ){
             throw new RuntimeException('Play token conflicts with an existing listen.');
@@ -356,7 +358,7 @@ function dt_playback_begin_listen(PDO $pdo,int $userId,string $sessionKey,int $r
     $insert=$pdo->prepare("INSERT INTO playback_listens_v130
         (play_token,user_id,session_id,recording_id,access_mode,source_type,source_id)
         VALUES (?,?,?,?,?,?,?)");
-    $insert->execute([$playToken,$userId,(int)$session['id'],$recordingId,$mode,substr($sourceType,0,30),$sourceId]);
+    $insert->execute([$playToken,$userId,(int)$session['id'],$recordingId,$mode,$sourceType,$sourceId]);
     $id=(int)$pdo->lastInsertId();
     dt_playback_event($pdo,$userId,(int)$session['id'],$recordingId,'listen.started',['play_token'=>$playToken,'access_mode'=>$mode]);
     $stmt=$pdo->prepare('SELECT * FROM playback_listens_v130 WHERE id=?');
@@ -370,6 +372,7 @@ function dt_playback_heartbeat(PDO $pdo,int $userId,string $playToken,int $posit
     $stmt->execute([strtolower(trim($playToken)),$userId]);
     $listen=$stmt->fetch();
     if(!$listen)throw new RuntimeException('Listen was not found.');
+    if(!empty($listen['completed_at']))return $listen;
     $position=max(0,$positionMs);
     $updatedAt=strtotime((string)$listen['updated_at'])?:time();
     $elapsedMs=max(0,(time()-$updatedAt)*1000);
