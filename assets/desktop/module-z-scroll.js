@@ -27,9 +27,13 @@
     return target.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)||Boolean(target.closest('[contenteditable="true"]'));
   };
 
-  const sceneEffects=()=>[...(desktop.getRegistry('effect')?.values() || [])]
-    .filter(effect=>effect.category==='z-scroll-scene'&&typeof effect.render==='function')
-    .sort((a,b)=>(a.order||0)-(b.order||0));
+  const sceneEffects=()=>{
+    const authored=window.DaveTunesExperienceRuntime?.descriptors?.(desktop.state.experienceManifest);
+    if(Array.isArray(authored)&&authored.length)return authored;
+    return [...(desktop.getRegistry('effect')?.values() || [])]
+      .filter(effect=>effect.category==='z-scroll-scene'&&typeof effect.render==='function')
+      .sort((a,b)=>(a.order||0)-(b.order||0));
+  };
 
   const fetchView=async view=>{
     const url=new URL('/desktop-data.php',window.location.origin);
@@ -320,6 +324,7 @@
       const onRegistered=event=>{
         if(event.detail?.type==='effect'&&event.detail.definition?.category==='z-scroll-scene')renderScenes();
       };
+      const onExperience=()=>renderScenes();
       const onPlayer=event=>{
         const reason=String(event.detail?.reason||'');
         if(state.active&&['ready','restore','trackchange','play','pause','ended','command:play-recording','command:toggle','command:next','command:previous'].includes(reason))renderScenes();
@@ -337,6 +342,8 @@
       window.addEventListener('blur',onBlur);
       document.addEventListener('visibilitychange',onVisibility);
       document.addEventListener('davestunes:desktop:registered',onRegistered);
+      document.addEventListener('davestunes:desktop:experience-loaded',onExperience);
+      document.addEventListener('davestunes:desktop:experience-cleared',onExperience);
       document.addEventListener('davestunes:desktop:player-snapshot',onPlayer);
 
       renderScenes();
@@ -354,6 +361,8 @@
         window.removeEventListener('blur',onBlur);
         document.removeEventListener('visibilitychange',onVisibility);
         document.removeEventListener('davestunes:desktop:registered',onRegistered);
+        document.removeEventListener('davestunes:desktop:experience-loaded',onExperience);
+        document.removeEventListener('davestunes:desktop:experience-cleared',onExperience);
         document.removeEventListener('davestunes:desktop:player-snapshot',onPlayer);
       };
     }
