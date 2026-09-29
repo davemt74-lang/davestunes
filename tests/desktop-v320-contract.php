@@ -42,6 +42,6 @@ if(!str_contains($artists,'function dt_artist_public_image'))throw new RuntimeEx
 if(!str_contains($service,"'back_url'=>\$artist?'/artist.php?artist='.rawurlencode"))throw new RuntimeException('Artist Studio must link back to the public profile.');
 if(!str_contains($workflow,'php tests/desktop-v320-contract.php'))throw new RuntimeException('Section 13 contract is not wired into CI.');
 if(!str_contains($workflow,'php tests/desktop-v320-mysql.php'))throw new RuntimeException('Section 13 MySQL gate is not wired into CI.');
-if(!str_contains($workflow,'node --check assets/artist-experience.js'))throw new RuntimeException('Artist Experience JS syntax gate is missing.');
+if(!str_contains($workflow,'node --check assets/public-experience.js'))throw new RuntimeException('Shared public experience JS syntax gate is missing.');
 
 echo "MUSIC_DESKTOP_V1_SECTION13_CONTRACT=PASS\n";
