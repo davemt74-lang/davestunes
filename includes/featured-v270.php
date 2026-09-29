@@ -39,6 +39,7 @@ function dt_featured_validate_content(PDO $pdo,string $type,int $id): void
     }else throw new RuntimeException('Featured content must be an album or song.');
     $stmt->execute([$id]);
     if(!$stmt->fetchColumn())throw new RuntimeException('Featured content was not found or is not available.');
+    if($type==='recording'&&!dt_library_recording_is_public($pdo,$id))throw new RuntimeException('Featured songs must belong to a published release.');
 }
 
 function dt_featured_save(PDO $pdo,array $user,array $input,?int $postId=null): int
