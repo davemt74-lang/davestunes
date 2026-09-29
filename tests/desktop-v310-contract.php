@@ -25,7 +25,7 @@ if(!str_contains($studio,'Back to Album'))throw new RuntimeException('Studio mus
 
 if(!str_contains($album,'Enter Experience'))throw new RuntimeException('Album page is missing the experience launch.');
 if(!str_contains($album,'dt_experience_active'))throw new RuntimeException('Album page must resolve the canonical published experience.');
-if(!str_contains($album,"release_status']!=='published'&&!$canEdit"))throw new RuntimeException('Album fallback must hide unpublished releases from unauthorized visitors.');
+if(!str_contains($album,"release_status']!=='published'&&!\$canEdit"))throw new RuntimeException('Album fallback must hide unpublished releases from unauthorized visitors.');
 
 if(!str_contains($experience,"release_status']!=='published'"))throw new RuntimeException('Published album experience surface must reject unpublished releases.');
 if(!str_contains($experience,'dt_experience_active'))throw new RuntimeException('Album experience must use the canonical active experience.');
