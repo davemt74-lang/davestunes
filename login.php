@@ -2,7 +2,7 @@
 declare(strict_types=1);
 if(!is_file(__DIR__.'/config.php')){header('Location: /install.php');exit;}
 require __DIR__.'/includes/bootstrap.php';
-if(dt_current_user())dt_redirect('/dashboard.php');
+if(dt_current_user())dt_redirect('/desktop.php');
 $error=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
     try{
@@ -10,7 +10,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
         $user=dt_auth_attempt_login(dt_db(),(string)($_POST['email']??''),(string)($_POST['password']??''));
         if(!$user)throw new RuntimeException('Email or password was not recognized.');
         dt_auth_begin_session($user);
-        dt_redirect('/dashboard.php');
+        dt_redirect('/desktop.php');
     }catch(Throwable $e){$error=$e->getMessage();}
 }
 dt_page_header('Sign in');
