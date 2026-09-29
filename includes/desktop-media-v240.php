@@ -33,3 +33,14 @@ function dt_desktop_media_release(PDO $pdo,array $user,int $releaseId): ?array
     $accessState=$owned?'owned':($available?'available':($saved?'saved':'public'));
     return dt_desktop_data_release_dto($pdo,$userId,$user,$release,$accessState,$saved,true);
 }
+
+
+function dt_desktop_media_artist(PDO $pdo,array $user,int $artistId): ?array
+{
+    $userId=(int)($user['id']??0);
+    if($userId<1||$artistId<1)return null;
+    foreach(dt_desktop_data_artists($pdo,$userId,$user,'',200) as $artist){
+        if((int)$artist['id']===$artistId)return $artist;
+    }
+    return null;
+}

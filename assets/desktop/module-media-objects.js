@@ -14,16 +14,33 @@
   };
 
   const fetchRelease=async id=>{
-    const key=Number(id);
+    const key='release:'+Number(id);
     const existing=hydration.get(key);
     if(existing?.status==='loading')return existing.promise;
     const promise=(async()=>{
       const url=new URL('/desktop-media.php',window.location.origin);
       url.searchParams.set('type','release');
-      url.searchParams.set('id',String(key));
+      url.searchParams.set('id',String(Number(id)));
       const response=await fetch(url,{credentials:'same-origin',headers:{Accept:'application/json'}});
       const json=await response.json();
       if(!response.ok||!json.ok)throw new Error(json.error||'Album is no longer available.');
+      return json.media;
+    })().finally(()=>hydration.delete(key));
+    hydration.set(key,{status:'loading',promise});
+    return promise;
+  };
+
+  const fetchArtist=async id=>{
+    const key='artist:'+Number(id);
+    const existing=hydration.get(key);
+    if(existing?.status==='loading')return existing.promise;
+    const promise=(async()=>{
+      const url=new URL('/desktop-media.php',window.location.origin);
+      url.searchParams.set('type','artist');
+      url.searchParams.set('id',String(Number(id)));
+      const response=await fetch(url,{credentials:'same-origin',headers:{Accept:'application/json'}});
+      const json=await response.json();
+      if(!response.ok||!json.ok)throw new Error(json.error||'Artist is no longer available.');
       return json.media;
     })().finally(()=>hydration.delete(key));
     hydration.set(key,{status:'loading',promise});
@@ -66,11 +83,19 @@
       open.dataset.objectInteractive='true';
       open.addEventListener('click',event=>{
         event.stopPropagation();
-        ctx.runCommand('library.open-view',{view:'albums'})
-          .then(()=>ctx.runCommand('library.search',{query:item.title||''}))
-          .catch(error=>ctx.emit('media-object-error',{error}));
+        window.location.assign(item.profileUrl||('/album.php?release='+releaseId));
       });
       actions.append(open);
+      if(item.experienceAvailable){
+        const experience=el('button','media-object-button','Experience');
+        experience.type='button';
+        experience.dataset.objectInteractive='true';
+        experience.addEventListener('click',event=>{
+          event.stopPropagation();
+          window.location.assign(item.experienceUrl||('/album-experience.php?release='+releaseId));
+        });
+        actions.append(experience);
+      }
 
       if(item.playableTrackIds?.length){
         const play=el('button','media-object-button primary','Play');
@@ -103,6 +128,36 @@
     }catch(_){if(mount.isConnected)renderDenied(mount);}
   };
 
+  const renderArtist=async(object,mount,ctx)=>{
+    const artistId=Number(object.resource?.id||0);
+    if(!artistId){renderDenied(mount);return;}
+    try{
+      const item=await fetchArtist(artistId);
+      if(!mount.isConnected)return;
+      mount.replaceChildren();
+      const card=el('div','media-object-sleeve artist-shortcut-card');
+      const art=el('div','media-object-art artist-shortcut-art');
+      if(item.profileImageUrl){
+        const image=document.createElement('img');
+        image.src=item.profileImageUrl;image.alt='';image.draggable=false;art.append(image);
+      }else art.append(el('span','',item.name?.slice(0,1).toUpperCase()||'?'));
+      const copy=el('div','media-object-copy');
+      copy.append(el('span','media-object-kicker','Artist'),el('strong','',item.name||'Artist'),el('span','media-object-artist',item.location||('@'+(item.slug||''))));
+      const actions=el('div','media-object-actions');actions.dataset.objectInteractive='true';
+      const open=el('button','media-object-button primary','Open');
+      open.type='button';open.dataset.objectInteractive='true';
+      open.addEventListener('click',event=>{event.stopPropagation();window.location.assign(item.profileUrl||('/artist.php?artist='+encodeURIComponent(item.slug||String(artistId))));});
+      actions.append(open);
+      if(item.experienceAvailable){
+        const experience=el('button','media-object-button','Experience');
+        experience.type='button';experience.dataset.objectInteractive='true';
+        experience.addEventListener('click',event=>{event.stopPropagation();window.location.assign(item.experienceUrl||('/artist-experience.php?artist='+artistId));});
+        actions.append(experience);
+      }
+      card.append(art,copy,actions);mount.append(card);
+    }catch(_){if(mount.isConnected)renderDenied(mount);}
+  };
+
   desktop.registerObjectType({
     id:'album-sleeve',
     label:'Album Sleeve',
@@ -113,6 +168,17 @@
       mount.append(loading);
       renderRelease(object,mount,ctx);
       return mount;
+    }
+  });
+
+  desktop.registerObjectType({
+    id:'artist-shortcut',
+    label:'Artist Shortcut',
+    render:(object,ctx)=>{
+      const mount=el('div','media-object-mount');
+      const loading=el('div','media-object-sleeve loading');
+      loading.append(el('span','media-object-kicker','Artist'),el('strong','','Loading…'));
+      mount.append(loading);renderArtist(object,mount,ctx);return mount;
     }
   });
 
@@ -138,12 +204,36 @@
   });
 
   desktop.registerCommand({
+    id:'media.place-artist',
+    run:async payload=>{
+      const id=Number(payload?.artistId||0);
+      if(!Number.isInteger(id)||id<1)throw new Error('Artist id is required.');
+      const x=Math.max(.12,Math.min(.82,Number(payload?.x??(.16+(id%6)*.11))));
+      const y=Math.max(.16,Math.min(.82,Number(payload?.y??(.2+(id%5)*.13))));
+      return desktop.runCommand('object.create',{
+        key:'artist:'+id,type:'artist-shortcut',resourceType:'artist',resourceId:id,label:'Artist',
+        x,y,rotation:Number(payload?.rotation??0),scale:Number(payload?.scale??1),payload:{schema:'artist-shortcut-v1'}
+      });
+    }
+  });
+
+  desktop.registerCommand({
     id:'media.refresh-release',
     run:async payload=>{
       const id=Number(payload?.releaseId||0);
-      if(id>0)hydration.delete(id);else hydration.clear();
+      if(id>0)hydration.delete('release:'+id);else hydration.clear();
       await desktop.runCommand('object.refresh');
       return {releaseId:id||null};
+    }
+  });
+
+  desktop.registerCommand({
+    id:'media.refresh-artist',
+    run:async payload=>{
+      const id=Number(payload?.artistId||0);
+      if(id>0)hydration.delete('artist:'+id);else hydration.clear();
+      await desktop.runCommand('object.refresh');
+      return {artistId:id||null};
     }
   });
 

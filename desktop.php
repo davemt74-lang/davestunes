@@ -5,7 +5,7 @@ require __DIR__.'/includes/bootstrap.php';
 $pdo=dt_db();
 $user=dt_require_user($pdo);
 $boot=[
-    'version'=>'music-desktop-v1-section9',
+    'version'=>'music-desktop-v1-section14',
     'user'=>[
         'id'=>(int)$user['id'],
         'displayName'=>(string)($user['display_name']??''),
@@ -21,6 +21,7 @@ $boot=[
         'zScroll'=>true,
         'flowBuilder'=>true,
         'effectsLibrary'=>true,
+        'collectionIntegration'=>true,
     ],
 ];
 $bootJson=json_encode($boot,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT);
