@@ -17,7 +17,7 @@ $artists=dt_artists_for_user($pdo,(int)$user['id']);
 dt_page_header('Dashboard');
 ?>
 <main class="shell">
-  <div class="eyebrow">Music platform foundation</div>
+  <div class="eyebrow"><?=dt_e(dt_release_label())?></div>
   <h2>Welcome, <?=dt_e((string)$user['display_name'])?></h2>
   <p class="muted"><?=dt_e((string)$user['email'])?></p>
   <p class="action-row"><a class="button" href="/desktop.php">Open Music Desktop</a><a class="secondary-button button" href="/library.php">Open personal library</a><a class="secondary-button button" href="/experience-studio.php">Experience Studio</a></p>
