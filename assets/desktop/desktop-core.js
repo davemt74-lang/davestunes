@@ -9,6 +9,7 @@
     mode: 'desktop',
     templateId: null,
     selectedObjectId: null,
+    playerSnapshot: null,
     ready: false,
   };
 
