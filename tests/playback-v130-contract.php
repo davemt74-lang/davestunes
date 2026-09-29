@@ -35,7 +35,7 @@ playback_has($runtime,'dt_entitlement_user_has_recording','Full playback must us
 playback_has($runtime,'dt_artist_can','Artist teams must be able to review their own media.');
 playback_has($runtime,'dt_playback_register_media','Governed media registration is missing.');
 playback_has($runtime,'dt_playback_store_upload','Governed artist media upload is missing.');
-playback_has($runtime,"$segment==='.'||$segment==='..'",'Protected storage keys must reject dot path segments.');
+playback_has($runtime,'$segment===\'.\'||$segment===\'..\'','Protected storage keys must reject dot path segments.');
 playback_has($runtime,"asset_status='superseded'",'Media replacement must preserve prior asset history.');
 playback_has($runtime,'FOR UPDATE','Media replacement and queue mutation need serialized writes.');
 playback_has($runtime,'dt_playback_replace_queue','Canonical queue service is missing.');
