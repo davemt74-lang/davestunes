@@ -27,6 +27,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 }
 
 $owned=dt_library_owned_releases($pdo,$userId);
+$available=dt_library_available_releases($pdo,$userId);
+$ownedSongs=dt_library_owned_recordings($pdo,$userId);
 $saved=dt_library_saved_releases($pdo,$userId);
 $followed=dt_library_followed_artists($pdo,$userId);
 $crates=dt_library_crates($pdo,$userId);
@@ -42,9 +44,19 @@ dt_page_header('Library');
   <?php dt_form_error($error); ?>
 
   <section class="grid">
-    <article class="card"><h2>Owned</h2>
+    <article class="card"><h2>Owned Albums</h2>
       <?php if(!$owned):?><p class="muted">Purchased and granted albums will appear here.</p><?php endif;?>
       <div class="stack"><?php foreach($owned as $release):?><div><strong><?=dt_e($release['title'])?></strong> <span class="pill"><?=dt_e($release['release_type'])?></span></div><?php endforeach;?></div>
+    </article>
+
+    <article class="card"><h2>Available</h2>
+      <?php if(!$available):?><p class="muted">Promotional, subscription, and other temporary access will appear here.</p><?php endif;?>
+      <div class="stack"><?php foreach($available as $release):?><div><strong><?=dt_e($release['title'])?></strong> <span class="pill">access</span></div><?php endforeach;?></div>
+    </article>
+
+    <article class="card"><h2>Owned Songs</h2>
+      <?php if(!$ownedSongs):?><p class="muted">Songs you own directly or through an owned release appear here.</p><?php endif;?>
+      <div class="stack"><?php foreach($ownedSongs as $recording):?><div><strong><?=dt_e($recording['title'])?></strong><?php if($recording['version_label']):?> <span class="muted">(<?=dt_e($recording['version_label'])?>)</span><?php endif;?></div><?php endforeach;?></div>
     </article>
 
     <article class="card"><h2>Saved</h2>
