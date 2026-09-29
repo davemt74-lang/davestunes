@@ -24,12 +24,8 @@
       const response=await fetch(url,{credentials:'same-origin',headers:{Accept:'application/json'}});
       const json=await response.json();
       if(!response.ok||!json.ok)throw new Error(json.error||'Album is no longer available.');
-      hydration.set(key,{status:'ready',value:json.media});
       return json.media;
-    })().catch(error=>{
-      hydration.set(key,{status:'denied',error});
-      throw error;
-    });
+    })().finally(()=>hydration.delete(key));
     hydration.set(key,{status:'loading',promise});
     return promise;
   };
@@ -112,7 +108,6 @@
     label:'Album Sleeve',
     render:(object,ctx)=>{
       const mount=el('div','media-object-mount');
-      mount.dataset.objectInteractive='false';
       const loading=el('div','media-object-sleeve loading');
       loading.append(el('span','media-object-kicker','Album'),el('strong','','Loading…'));
       mount.append(loading);
