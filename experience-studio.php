@@ -7,9 +7,20 @@ $user=dt_require_user($pdo);
 $ownerType=(string)($_GET['owner_type']??'user');
 $ownerId=(int)($_GET['owner_id']??($ownerType==='user'?(int)$user['id']:0));
 $key=(string)($_GET['key']??'default');
-$experience=dt_experience_find_for_owner($pdo,$ownerType,$ownerId,$key);
+$experience=null;
+if(isset($_GET['experience_id'])){
+    $experience=dt_experience_row($pdo,(int)$_GET['experience_id']);
+    if(!$experience)throw new RuntimeException('Experience was not found.');
+    $ownerType=(string)$experience['owner_type'];
+    $ownerId=(int)$experience['owner_id'];
+    $key=(string)$experience['experience_key'];
+    dt_experience_require_owner($pdo,$ownerType,$ownerId,$user);
+}else{
+    $ownerType=dt_experience_owner($ownerType);
+    dt_experience_require_owner($pdo,$ownerType,$ownerId,$user);
+    $experience=dt_experience_find_for_owner($pdo,$ownerType,$ownerId,$key);
+}
 $ownerContext=dt_experience_owner_context($pdo,$ownerType,$ownerId);
-if(!isset($_GET['experience_id']))dt_experience_require_owner($pdo,dt_experience_owner($ownerType),$ownerId,$user);
 $error=null;
 
 if(!$experience&&($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
@@ -19,10 +30,6 @@ if(!$experience&&($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
     $experience=$created['experience'];
     dt_redirect('/experience-studio.php?experience_id='.(int)$experience['id']);
   }catch(Throwable $e){$error=$e->getMessage();}
-}
-if(isset($_GET['experience_id'])){
-  $experience=dt_experience_row($pdo,(int)$_GET['experience_id']);
-  if($experience)dt_experience_require_owner($pdo,(string)$experience['owner_type'],(int)$experience['owner_id'],$user);
 }
 dt_page_header('Experience Studio');
 ?>
