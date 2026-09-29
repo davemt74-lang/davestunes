@@ -4,19 +4,21 @@ declare(strict_types=1);
 $root=dirname(__DIR__);
 $dashboard=file_get_contents($root.'/dashboard.php');
 $artist=file_get_contents($root.'/artist.php');
+$album=file_get_contents($root.'/album.php');
 $experience=file_get_contents($root.'/artist-experience.php');
 $boot=file_get_contents($root.'/assets/artist-experience.js');
 $artists=file_get_contents($root.'/includes/artists.php');
 $service=file_get_contents($root.'/includes/experience-v280.php');
 $workflow=file_get_contents($root.'/.github/workflows/foundation-v1.yml');
 
-foreach(compact('dashboard','artist','experience','boot','artists','service','workflow') as $name=>$content){
+foreach(compact('dashboard','artist','album','experience','boot','artists','service','workflow') as $name=>$content){
     if($content===false)throw new RuntimeException('Could not load '.$name.'.');
 }
 foreach(['Public Profile','Build Experience','/artist.php?artist=','owner_type=artist'] as $needle){
     if(!str_contains($dashboard,$needle))throw new RuntimeException('Dashboard artist integration missing: '.$needle);
 }
 if(!str_contains($artist,'Artist Desktop'))throw new RuntimeException('Public Artist Desktop shell is missing.');
+if(!str_contains($album,'/artist.php?artist='))throw new RuntimeException('Album pages must link back to the Artist Desktop.');
 if(!str_contains($artist,'dt_catalog_releases'))throw new RuntimeException('Artist Desktop must use canonical catalog releases.');
 if(!str_contains($artist,"release_status']==='published'"))throw new RuntimeException('Artist Desktop must only project published releases.');
 if(!str_contains($artist,'Enter Experience'))throw new RuntimeException('Artist Desktop is missing Experience launch.');
