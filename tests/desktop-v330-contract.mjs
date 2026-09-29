@@ -37,8 +37,12 @@ assert.match(library,/album-experience\.php/);
 assert.match(library,/experienceAvailable/);
 
 assert.match(data,/experienceAvailable/);
-assert.match(data,/dt_experience_public_allowed\(\$pdo,'release'/);
-assert.match(data,/dt_experience_public_allowed\(\$pdo,'artist'/);
+assert.match(data,/function dt_desktop_experience_available/);
+assert.match(data,/dt_table_exists\(\$pdo,'experiences_v280'\)/);
+assert.match(data,/dt_table_exists\(\$pdo,'experience_versions_v280'\)/);
+assert.match(data,/dt_experience_public_allowed\(\$pdo,\$ownerType,\$ownerId,\$user\)/);
+assert.match(data,/dt_desktop_experience_available\(\$pdo,'release'/);
+assert.match(data,/dt_desktop_experience_available\(\$pdo,'artist'/);
 assert.match(data,/profileUrl/);
 assert.match(data,/experienceUrl/);
 
