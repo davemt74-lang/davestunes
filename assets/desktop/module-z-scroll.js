@@ -64,7 +64,11 @@
     runCommand:desktop.runCommand,
     emit:desktop.emit,
     openLibrary:async(view,query='')=>{
-      exit(true);
+      if(state.latched)setLatched(false);
+      else{
+        state.held=false;
+        exit(true);
+      }
       await desktop.runCommand('library.open-view',{view});
       if(query)await desktop.runCommand('library.search',{query});
     }
