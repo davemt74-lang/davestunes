@@ -260,7 +260,7 @@ function dt_playback_can_queue(PDO $pdo,int $userId,int $recordingId): bool
 {
     $user=dt_auth_user_by_id($pdo,$userId);
     if(!$user)return false;
-    return dt_playback_access_mode($pdo,$recordingId,$user)!=='none';
+    return dt_playback_select_media($pdo,$recordingId,$user)!==null;
 }
 
 function dt_playback_replace_queue(PDO $pdo,int $userId,string $sessionKey,array $recordingIds,string $sourceType='',?int $sourceId=null,?int $expectedRevision=null): array
@@ -335,8 +335,9 @@ function dt_playback_begin_listen(PDO $pdo,int $userId,string $sessionKey,int $r
     if(!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/',$playToken))throw new RuntimeException('Play token must be a UUID v4.');
     $user=dt_auth_user_by_id($pdo,$userId);
     if(!$user)throw new RuntimeException('User was not found.');
-    $mode=dt_playback_access_mode($pdo,$recordingId,$user);
-    if($mode==='none')throw new RuntimeException('Recording is not available for playback.');
+    $selected=dt_playback_select_media($pdo,$recordingId,$user);
+    if(!$selected)throw new RuntimeException('Recording is not available for playback.');
+    $mode=(string)$selected['access_mode'];
     $session=dt_playback_session($pdo,$userId,$sessionKey);
 
     $stmt=$pdo->prepare('SELECT * FROM playback_listens_v130 WHERE play_token=? LIMIT 1');
