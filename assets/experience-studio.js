@@ -286,6 +286,7 @@
 
   q('[data-studio-action="add-scene"]').addEventListener('click',()=>addScene().catch(showError));
   q('[data-studio-action="add-node"]').addEventListener('click',()=>addNode().catch(showError));
+  q('[data-studio-action="connect"]').addEventListener('click',()=>connect().catch(showError));
   q('[data-studio-action="preview"]').addEventListener('click',preview);
   q('[data-studio-action="publish"]').addEventListener('click',()=>publish().catch(showError));
   q('[data-studio-preview-close]').addEventListener('click',()=>{q('[data-studio-preview]').hidden=true;});
