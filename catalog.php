@@ -80,6 +80,12 @@ dt_page_header('Catalog');
           <span class="pill"><?=dt_e($release['release_type'])?></span>
           <span class="pill"><?=dt_e($release['release_status'])?></span>
           <span class="pill"><?=$release['track_count']?> tracks</span>
+          <?php $releaseTracks=dt_catalog_release_tracks($pdo,$artistId,(int)$release['id']); ?>
+          <?php if($releaseTracks):?><ol class="track-list"><?php foreach($releaseTracks as $releaseTrack):?><li>
+            <span><?=dt_e($releaseTrack['recording_title'])?></span>
+            <span class="muted">Disc <?=(int)$releaseTrack['disc_number']?> · Track <?=(int)$releaseTrack['track_number']?></span>
+            <?php if($canCatalog&&$release['release_status']!=='archived'):?><form method="post" class="inline-form"><?=dt_csrf_field()?><input type="hidden" name="artist_id" value="<?=$artistId?>"><input type="hidden" name="action" value="remove_track"><input type="hidden" name="release_track_id" value="<?=(int)$releaseTrack['id']?>"><button class="nav-link" type="submit">Remove</button></form><?php endif;?>
+          </li><?php endforeach;?></ol><?php endif;?>
           <?php if($canRelease&&$release['release_status']!=='published'):?>
           <form method="post" style="margin-top:8px"><?=dt_csrf_field()?><input type="hidden" name="artist_id" value="<?=$artistId?>"><input type="hidden" name="action" value="publish_release"><input type="hidden" name="release_id" value="<?=(int)$release['id']?>"><button type="submit">Publish</button></form>
           <?php endif;?>
