@@ -272,6 +272,9 @@ function dt_desktop_data_artists(PDO $pdo,int $userId,array $user,string $query=
 function dt_desktop_data_crates(PDO $pdo,int $userId,array $user,string $query='',int $limit=100): array
 {
     $crates=dt_library_crates($pdo,$userId);
+    $releaseMap=dt_desktop_data_release_map($pdo,$userId,$user,false);
+    $songMap=[];
+    foreach(dt_desktop_data_songs($pdo,$userId,$user,'',300) as $song)$songMap[(int)$song['id']]=$song;
     $items=[];
     foreach($crates as $crate){
         if(!dt_desktop_data_matches($query,(string)$crate['crate_name']))continue;
@@ -288,14 +291,14 @@ function dt_desktop_data_crates(PDO $pdo,int $userId,array $user,string $query='
                 $releaseStmt->execute([$resourceId]);
                 $release=$releaseStmt->fetch();
                 if($release&&dt_library_can_collect($pdo,$userId,'release',$resourceId)){
-                    $children[]=dt_desktop_data_release_dto($pdo,$userId,$user,$release,dt_entitlement_user_has_release($pdo,$userId,$resourceId)?'available':'saved',false,false);
+                    $children[]=$releaseMap[$resourceId]??dt_desktop_data_release_dto($pdo,$userId,$user,$release,'public',false,false);
                 }
             }elseif($resourceType==='recording'){
                 $recordingStmt=$pdo->prepare("SELECT r.*,a.name artist_name FROM music_recordings_v110 r INNER JOIN artists a ON a.id=r.artist_id WHERE r.id=? LIMIT 1");
                 $recordingStmt->execute([$resourceId]);
                 $recording=$recordingStmt->fetch();
                 if($recording&&dt_library_can_collect($pdo,$userId,'recording',$resourceId)){
-                    $children[]=dt_desktop_data_song_dto($pdo,$userId,$user,$recording,dt_entitlement_user_has_recording($pdo,$userId,$resourceId)?'available':'saved',false);
+                    $children[]=$songMap[$resourceId]??dt_desktop_data_song_dto($pdo,$userId,$user,$recording,'public',false);
                 }
             }
         }
@@ -314,6 +317,8 @@ function dt_desktop_data_crates(PDO $pdo,int $userId,array $user,string $query='
 
 function dt_desktop_data_playlists(PDO $pdo,int $userId,array $user,string $query='',int $limit=100): array
 {
+    $songMap=[];
+    foreach(dt_desktop_data_songs($pdo,$userId,$user,'',300) as $song)$songMap[(int)$song['id']]=$song;
     $stmt=$pdo->prepare("SELECT p.*,(SELECT COUNT(*) FROM music_playlist_recordings_v120 pr WHERE pr.playlist_id=p.id) item_count
         FROM music_playlists_v120 p WHERE p.user_id=? ORDER BY p.updated_at DESC,p.id DESC");
     $stmt->execute([$userId]);
@@ -329,8 +334,9 @@ function dt_desktop_data_playlists(PDO $pdo,int $userId,array $user,string $quer
         $tracks->execute([$playlistId]);
         $songs=[];
         foreach($tracks->fetchAll()?:[] as $recording){
-            if(!dt_library_can_collect($pdo,$userId,'recording',(int)$recording['id']))continue;
-            $songs[]=dt_desktop_data_song_dto($pdo,$userId,$user,$recording,dt_entitlement_user_has_recording($pdo,$userId,(int)$recording['id'])?'available':'saved',false);
+            $recordingId=(int)$recording['id'];
+            if(!dt_library_can_collect($pdo,$userId,'recording',$recordingId))continue;
+            $songs[]=$songMap[$recordingId]??dt_desktop_data_song_dto($pdo,$userId,$user,$recording,'public',false);
         }
         $items[]=[
             'id'=>$playlistId,
@@ -371,9 +377,10 @@ function dt_desktop_data_recent(PDO $pdo,int $userId,string $query='',int $limit
 
 function dt_desktop_data_home(PDO $pdo,int $userId,array $user,string $query=''): array
 {
+    $libraryMap=dt_desktop_data_release_map($pdo,$userId,$user,false);
     $libraryAlbums=dt_desktop_data_albums($pdo,$userId,$user,$query,false,24);
     $discoverAll=dt_desktop_data_albums($pdo,$userId,$user,$query,true,80);
-    $libraryIds=array_fill_keys(array_map(static fn(array $item): int => (int)$item['id'],$libraryAlbums),true);
+    $libraryIds=array_fill_keys(array_map('intval',array_keys($libraryMap)),true);
     $discover=array_values(array_filter($discoverAll,static fn(array $item): bool => $item['accessState']==='public'&&!isset($libraryIds[(int)$item['id']])));
     return [
         'hero'=>$libraryAlbums[0]??$discover[0]??null,
