@@ -36,3 +36,14 @@ Current release: `1.0.0-rc1` (`soft-launch`).
 The soft launch intentionally focuses on the core music experience already implemented: accounts, artist identities, catalog publishing, personal library, Music Desktop, digital turntable, featured content, authored album/artist experiences, and the first-run web installer. Commerce is not part of RC1 and the public copy does not advertise purchasing.
 
 The Desktop surface and turntable visuals are generated with CSS. No background-image pack is required for the default Midnight Desk template.
+
+
+## Soft Launch RC2 — Desktop Home
+
+Current release: `1.0.0-rc2`.
+
+The root homepage is the default Music Desktop experience. Signed-out visitors see curated featured albums, fallback published releases, basic News & Notes, and the Desktop/turntable atmosphere immediately after the loading splash completes.
+
+After signup or login, users land directly on the Music Desktop. Brand-new accounts begin in a starter state; saving music, following artists, listening, creating playlists/crates, or placing Desktop objects moves the home into its personalized state. The product does not switch to a separate home system—the same Desktop progressively becomes the user's own.
+
+Desktop surfaces use a readiness-gated animated splash so the underlying Desktop is only revealed after its required runtime/content layers have settled.
