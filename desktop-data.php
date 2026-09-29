@@ -13,7 +13,10 @@ function dt_desktop_data_json(array $payload,int $status=200): never
     exit;
 }
 
-if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET')dt_desktop_data_json(['ok'=>false,'error'=>'Method not allowed.'],405);
+if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET'){
+    header('Allow: GET');
+    dt_desktop_data_json(['ok'=>false,'error'=>'Method not allowed.'],405);
+}
 
 try{
     $pdo=dt_db();
