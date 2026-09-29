@@ -55,6 +55,7 @@ dt_page_header('Experience Studio');
         <div class="studio-toolbar-actions">
           <button type="button" data-studio-action="add-scene">+ Scene</button>
           <button type="button" data-studio-action="add-node">+ Node</button>
+          <button type="button" data-studio-action="connect">+ Connect</button>
           <button type="button" data-studio-action="preview">Preview</button>
           <button type="button" class="primary" data-studio-action="publish">Publish</button>
         </div>
