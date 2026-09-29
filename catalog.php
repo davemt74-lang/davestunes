@@ -8,6 +8,7 @@ $artistId=max(0,(int)($_GET['artist']??$_POST['artist_id']??0));
 $artist=dt_artist_by_id($pdo,$artistId);
 if(!$artist||!dt_artist_can($pdo,$artistId,(int)$user['id'],'view')){http_response_code(404);exit('Artist not found.');}
 $canCatalog=dt_artist_can($pdo,$artistId,(int)$user['id'],'catalog');
+$canRelease=dt_artist_can($pdo,$artistId,(int)$user['id'],'releases');
 $error=null;
 
 if($_SERVER['REQUEST_METHOD']==='POST'){
@@ -35,6 +36,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             );
         }elseif($action==='publish_release'){
             dt_catalog_publish_release($pdo,$artistId,(int)($_POST['release_id']??0),$user);
+        }elseif($action==='remove_track'){
+            dt_catalog_remove_release_track($pdo,$artistId,(int)($_POST['release_track_id']??0),$user);
         }
         dt_redirect('/catalog.php?artist='.$artistId);
     }catch(Throwable $e){$error=$e->getMessage();}
@@ -77,7 +80,7 @@ dt_page_header('Catalog');
           <span class="pill"><?=dt_e($release['release_type'])?></span>
           <span class="pill"><?=dt_e($release['release_status'])?></span>
           <span class="pill"><?=$release['track_count']?> tracks</span>
-          <?php if($canCatalog&&$release['release_status']!=='published'):?>
+          <?php if($canRelease&&$release['release_status']!=='published'):?>
           <form method="post" style="margin-top:8px"><?=dt_csrf_field()?><input type="hidden" name="artist_id" value="<?=$artistId?>"><input type="hidden" name="action" value="publish_release"><input type="hidden" name="release_id" value="<?=(int)$release['id']?>"><button type="submit">Publish</button></form>
           <?php endif;?>
         </div>
