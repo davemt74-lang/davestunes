@@ -19,6 +19,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             dt_library_follow_artist($pdo,$userId,(int)($_POST['artist_id']??0));
         }elseif($action==='create_crate'){
             dt_library_create_crate($pdo,$userId,(string)($_POST['crate_name']??''));
+        }elseif($action==='add_to_crate'){
+            dt_library_add_to_crate($pdo,$userId,(int)($_POST['crate_id']??0),'release',(int)($_POST['release_id']??0));
         }
         dt_redirect('/library.php');
     }catch(Throwable $e){$error=$e->getMessage();}
@@ -29,8 +31,8 @@ $saved=dt_library_saved_releases($pdo,$userId);
 $followed=dt_library_followed_artists($pdo,$userId);
 $crates=dt_library_crates($pdo,$userId);
 $discover=dt_library_published_releases($pdo,30);
-$savedIds=array_fill_keys(array_map(static fn(array $row):(int)=>(int)$row['id'],$saved),true);
-$followedIds=array_fill_keys(array_map(static fn(array $row):(int)=>(int)$row['id'],$followed),true);
+$savedIds=array_fill_keys(array_map(static fn(array $row): int => (int)$row['id'],$saved),true);
+$followedIds=array_fill_keys(array_map(static fn(array $row): int => (int)$row['id'],$followed),true);
 
 dt_page_header('Library');
 ?>
@@ -72,6 +74,7 @@ dt_page_header('Library');
         <div class="action-row">
           <form method="post"><?=dt_csrf_field()?><input type="hidden" name="release_id" value="<?=(int)$release['id']?>"><input type="hidden" name="action" value="<?=isset($savedIds[(int)$release['id']])?'unsave_release':'save_release'?>"><button type="submit"><?=isset($savedIds[(int)$release['id']])?'Saved ✓':'Save'?></button></form>
           <?php if(!isset($followedIds[(int)$release['artist_id']])):?><form method="post"><?=dt_csrf_field()?><input type="hidden" name="artist_id" value="<?=(int)$release['artist_id']?>"><input type="hidden" name="action" value="follow_artist"><button class="secondary-button" type="submit">Follow artist</button></form><?php endif;?>
+          <?php if($crates):?><form method="post" class="crate-add-form"><?=dt_csrf_field()?><input type="hidden" name="release_id" value="<?=(int)$release['id']?>"><input type="hidden" name="action" value="add_to_crate"><select name="crate_id"><?php foreach($crates as $crate):?><option value="<?=(int)$crate['id']?>"><?=dt_e($crate['crate_name'])?></option><?php endforeach;?></select><button class="secondary-button" type="submit">Add to crate</button></form><?php endif;?>
         </div>
       </article>
       <?php endforeach;?>
