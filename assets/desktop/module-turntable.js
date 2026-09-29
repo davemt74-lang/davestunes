@@ -102,9 +102,19 @@
     if(object.type!=='album-sleeve'||object.resource?.type!=='release'||!object.resource?.id)return;
     if(!isInsideDeck(Number(detail.clientX),Number(detail.clientY)))return;
     deck.dataset.turntableDrop='loading';
+    if(dropHint)dropHint.textContent='Loading album…';
     loadRelease(Number(object.resource.id))
-      .then(()=>{deck.dataset.turntableDrop='accepted';setTimeout(()=>{if(deck)deck.dataset.turntableDrop='idle';},650);})
-      .catch(error=>{deck.dataset.turntableDrop='error';desktop.emit('turntable-error',{error});setTimeout(()=>{if(deck)deck.dataset.turntableDrop='idle';},1000);});
+      .then(()=>{
+        deck.dataset.turntableDrop='accepted';
+        if(dropHint)dropHint.textContent='Spinning';
+        setTimeout(()=>{if(deck)deck.dataset.turntableDrop='idle';if(dropHint)dropHint.textContent='Drop album to play';},650);
+      })
+      .catch(error=>{
+        deck.dataset.turntableDrop='error';
+        if(dropHint)dropHint.textContent='Album unavailable';
+        desktop.emit('turntable-error',{error});
+        setTimeout(()=>{if(deck)deck.dataset.turntableDrop='idle';if(dropHint)dropHint.textContent='Drop album to play';},1000);
+      });
   };
 
   const onControl=async event=>{
