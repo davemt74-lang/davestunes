@@ -53,7 +53,7 @@ must_contain($artists,"account_status']!=='active'",'Artist membership must requ
 must_not_contain($artists,'password_hash','Artist identities must not become a second authentication system.');
 
 foreach(['db.php','security.php','foundation-schema-v100.php','auth.php','artists.php','view.php'] as $include){
-    must_contain($bootstrap,"require_once __DIR__.'/'.$include","Bootstrap is missing ".$include);
+    must_contain($bootstrap,"require_once __DIR__.'/{$include}';","Bootstrap is missing ".$include);
 }
 must_contain($workflow,"php: ['8.1','8.3']",'CI must cover PHP 8.1 and 8.3.');
 must_contain($workflow,'mysql:8.0','CI must test against MySQL 8.');
