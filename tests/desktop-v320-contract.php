@@ -24,7 +24,7 @@ if(!str_contains($artist,"release_status']==='published'"))throw new RuntimeExce
 if(!str_contains($artist,'Enter Experience'))throw new RuntimeException('Artist Desktop is missing Experience launch.');
 if(!str_contains($artist,'dt_artist_public_url'))throw new RuntimeException('Artist Desktop must sanitize public links.');
 if(!str_contains($artist,'dt_artist_public_image'))throw new RuntimeException('Artist Desktop must sanitize public images.');
-if(!str_contains($artist,"artist_status']!=='active'&&!$canEdit"))throw new RuntimeException('Non-active artist profiles must be hidden from public visitors.');
+if(!str_contains($artist,"artist_status']!=='active'&&!\$canEdit"))throw new RuntimeException('Non-active artist profiles must be hidden from public visitors.');
 
 foreach(['experience-effects.js','module-experience-runtime.js','module-z-scroll.js'] as $asset){
     if(!str_contains($experience,$asset))throw new RuntimeException('Artist Experience must use canonical runtime asset '.$asset.'.');
@@ -39,7 +39,7 @@ if(!str_contains($artists,'function dt_artist_public_url'))throw new RuntimeExce
 if(!str_contains($artists,"['http','https']"))throw new RuntimeException('Public artist URL sanitizer must only allow HTTP(S).');
 if(!str_contains($artists,'function dt_artist_public_image'))throw new RuntimeException('Public artist image sanitizer is missing.');
 
-if(!str_contains($service,"'back_url'=>$artist?'/artist.php?artist='"))throw new RuntimeException('Artist Studio must link back to the public profile.');
+if(!str_contains($service,"'back_url'=>\$artist?'/artist.php?artist='.rawurlencode"))throw new RuntimeException('Artist Studio must link back to the public profile.');
 if(!str_contains($workflow,'php tests/desktop-v320-contract.php'))throw new RuntimeException('Section 13 contract is not wired into CI.');
 if(!str_contains($workflow,'php tests/desktop-v320-mysql.php'))throw new RuntimeException('Section 13 MySQL gate is not wired into CI.');
 if(!str_contains($workflow,'node --check assets/artist-experience.js'))throw new RuntimeException('Artist Experience JS syntax gate is missing.');
