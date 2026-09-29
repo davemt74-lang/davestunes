@@ -29,6 +29,10 @@
     registries[type].set(frozen.id, frozen);
     emit('registered', { type, definition: frozen });
     if (state.ready && type === 'module') mountModule(frozen.id);
+    if (state.ready && type === 'template' && !state.templateId) {
+      const root = document.getElementById('dt-desktop-root');
+      if (root?.dataset.defaultTemplate === frozen.id) applyTemplate(frozen.id);
+    }
     return frozen;
   };
 
