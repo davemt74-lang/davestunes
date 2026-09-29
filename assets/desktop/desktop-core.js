@@ -10,6 +10,8 @@
     templateId: null,
     selectedObjectId: null,
     playerSnapshot: null,
+    experienceManifest: null,
+    experienceHash: '',
     ready: false,
   };
 
