@@ -21,6 +21,19 @@
 
   const badge = text => element('span', 'desktop-data-badge', text);
 
+  const pinButton = (objectType, resourceId, ctx) => {
+    if (!ctx.getRegistry('command')?.has('desktop.add-object')) return null;
+    const button = element('button', 'desktop-card-button desktop-card-button-secondary', 'Desktop');
+    button.type = 'button';
+    button.addEventListener('click', async event => {
+      event.stopPropagation();
+      try {
+        await ctx.runCommand('desktop.add-object', { objectType, resourceId, pinned: true });
+      } catch (error) { ctx.emit('library-error', { error }); }
+    });
+    return button;
+  };
+
   const empty = (mount, title, copy = '') => {
     mount.replaceChildren();
     const box = element('div', 'library-empty');
@@ -77,6 +90,8 @@
       });
       actions.append(play);
     }
+    const pin = pinButton('release', item.id, ctx);
+    if (pin) actions.append(pin);
     card.append(art, copy, actions);
     return card;
   };
@@ -94,6 +109,7 @@
     if (item.saved) badges.append(badge('Saved'));
     copy.append(badges);
     row.append(copy);
+    const actions = element('div', 'desktop-card-actions');
     if (item.playable) {
       const play = element('button', 'desktop-card-button', 'Play');
       play.type = 'button';
@@ -102,12 +118,15 @@
           await ctx.runCommand('player.play-recording', { recordingId: item.id, sourceType: 'library' });
         } catch (error) { ctx.emit('library-error', { error }); }
       });
-      row.append(play);
+      actions.append(play);
     }
+    const pin = pinButton('recording', item.id, ctx);
+    if (pin) actions.append(pin);
+    row.append(actions);
     return row;
   };
 
-  const artistCard = item => {
+  const artistCard = (item, ctx) => {
     const card = element('article', 'desktop-artist-card');
     card.dataset.artistId = String(item.id);
     const avatar = element('div', 'desktop-artist-avatar');
@@ -125,6 +144,8 @@
     copy.append(element('span', 'desktop-card-meta', item.location || ('@' + item.slug)));
     if (item.followed) copy.append(badge('Following'));
     card.append(avatar, copy);
+    const pin = pinButton('artist', item.id, ctx);
+    if (pin) card.append(pin);
     return card;
   };
 
@@ -152,6 +173,7 @@
     copy.append(element('span', 'desktop-card-meta', detail));
     if (item.description) copy.append(element('span', 'desktop-card-description', item.description));
     card.append(copy);
+    const actions = element('div', 'desktop-card-actions');
 
     if (item.playableTrackIds?.length) {
       const play = element('button', 'desktop-card-button', 'Play');
@@ -170,8 +192,11 @@
           });
         } catch (error) { ctx.emit('library-error', { error }); }
       });
-      card.append(play);
+      actions.append(play);
     }
+    const pin = pinButton(item.type, item.id, ctx);
+    if (pin) actions.append(pin);
+    card.append(actions);
     return card;
   };
 
@@ -184,7 +209,7 @@
     const grid = element('div', kind === 'songs' || kind === 'recent' ? 'desktop-data-list' : 'desktop-data-grid');
     for (const item of items) {
       if (kind === 'albums') grid.append(albumCard(item, ctx));
-      else if (kind === 'artists') grid.append(artistCard(item));
+      else if (kind === 'artists') grid.append(artistCard(item, ctx));
       else if (kind === 'songs') grid.append(songRow(item, ctx));
       else if (kind === 'recent') grid.append(recentRow(item, ctx));
       else grid.append(collectionCard(item, ctx));
@@ -211,6 +236,8 @@
         });
         hero.append(play);
       }
+      const pin = pinButton('release', data.hero.id, ctx);
+      if (pin) hero.append(pin);
       mount.append(hero);
     }
 
