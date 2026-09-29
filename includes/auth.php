@@ -6,10 +6,16 @@ function dt_auth_normalize_email(string $email): string
     return strtolower(trim($email));
 }
 
+function dt_auth_safe_user_select(): string
+{
+    return "u.id,u.email,u.account_status,u.email_verified_at,u.last_login_at,u.created_at,u.updated_at,
+        p.display_name,p.handle,p.bio,p.avatar_path,p.timezone";
+}
+
 function dt_auth_user_by_id(PDO $pdo,int $userId): ?array
 {
     if($userId<1)return null;
-    $stmt=$pdo->prepare("SELECT u.*,p.display_name,p.handle,p.bio,p.avatar_path,p.timezone
+    $stmt=$pdo->prepare("SELECT ".dt_auth_safe_user_select()."
         FROM users u LEFT JOIN user_profiles p ON p.user_id=u.id
         WHERE u.id=? LIMIT 1");
     $stmt->execute([$userId]);
@@ -19,12 +25,27 @@ function dt_auth_user_by_id(PDO $pdo,int $userId): ?array
 
 function dt_auth_user_by_email(PDO $pdo,string $email): ?array
 {
-    $stmt=$pdo->prepare("SELECT u.*,p.display_name,p.handle,p.bio,p.avatar_path,p.timezone
+    $stmt=$pdo->prepare("SELECT ".dt_auth_safe_user_select()."
         FROM users u LEFT JOIN user_profiles p ON p.user_id=u.id
         WHERE u.email=? LIMIT 1");
     $stmt->execute([dt_auth_normalize_email($email)]);
     $row=$stmt->fetch();
     return is_array($row)?$row:null;
+}
+
+function dt_auth_credentials_by_email(PDO $pdo,string $email): ?array
+{
+    $stmt=$pdo->prepare('SELECT id,email,password_hash,account_status FROM users WHERE email=? LIMIT 1');
+    $stmt->execute([dt_auth_normalize_email($email)]);
+    $row=$stmt->fetch();
+    return is_array($row)?$row:null;
+}
+
+function dt_auth_dummy_hash(): string
+{
+    static $hash=null;
+    if($hash===null)$hash=password_hash('davestunes-invalid-login-padding',PASSWORD_DEFAULT);
+    return (string)$hash;
 }
 
 function dt_auth_register(PDO $pdo,string $email,string $password,string $displayName): array
@@ -58,6 +79,7 @@ function dt_auth_register(PDO $pdo,string $email,string $password,string $displa
 
 function dt_auth_record_attempt(PDO $pdo,string $email,bool $success): void
 {
+    $pdo->exec("DELETE FROM auth_login_attempts WHERE created_at<DATE_SUB(NOW(),INTERVAL 30 DAY)");
     $stmt=$pdo->prepare('INSERT INTO auth_login_attempts (email_hash,ip_hash,was_successful) VALUES (?,?,?)');
     $stmt->execute([dt_identity_hash($email),dt_identity_hash(dt_client_ip()),$success?1:0]);
 }
@@ -77,14 +99,20 @@ function dt_auth_attempt_login(PDO $pdo,string $email,string $password): ?array
 {
     $email=dt_auth_normalize_email($email);
     if(dt_auth_rate_limited($pdo,$email))throw new RuntimeException('Too many sign-in attempts. Try again later.');
-    $user=dt_auth_user_by_email($pdo,$email);
-    $valid=$user
-        && (string)($user['account_status']??'')==='active'
-        && password_verify($password,(string)($user['password_hash']??''));
+
+    $credentials=dt_auth_credentials_by_email($pdo,$email);
+    $hash=(string)($credentials['password_hash']??dt_auth_dummy_hash());
+    $passwordValid=password_verify($password,$hash);
+    $valid=$credentials
+        && (string)($credentials['account_status']??'')==='active'
+        && $passwordValid;
+
     dt_auth_record_attempt($pdo,$email,(bool)$valid);
     if(!$valid)return null;
-    $pdo->prepare('UPDATE users SET last_login_at=NOW() WHERE id=?')->execute([(int)$user['id']]);
-    return dt_auth_user_by_id($pdo,(int)$user['id']);
+
+    $userId=(int)$credentials['id'];
+    $pdo->prepare('UPDATE users SET last_login_at=NOW() WHERE id=?')->execute([$userId]);
+    return dt_auth_user_by_id($pdo,$userId);
 }
 
 function dt_auth_begin_session(array $user): void
@@ -92,6 +120,7 @@ function dt_auth_begin_session(array $user): void
     $userId=(int)($user['id']??0);
     if($userId<1)throw new RuntimeException('Cannot start a session without a user.');
     session_regenerate_id(true);
+    unset($_SESSION['csrf_token']);
     $_SESSION['user_id']=$userId;
 }
 
