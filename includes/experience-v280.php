@@ -199,6 +199,127 @@ function dt_experience_edge_add(PDO $pdo,int $versionId,array $user,array $input
     return $q->fetch()?:[];
 }
 
+
+
+function dt_experience_scene_update(PDO $pdo,int $versionId,array $user,string $sceneKey,array $input): array
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $sceneKey=dt_experience_key($sceneKey);
+    $stmt=$pdo->prepare('SELECT * FROM experience_scenes_v280 WHERE version_id=? AND scene_key=? LIMIT 1');
+    $stmt->execute([$versionId,$sceneKey]);$row=$stmt->fetch();
+    if(!$row)throw new RuntimeException('Scene was not found.');
+    $title=array_key_exists('title',$input)?trim((string)$input['title']):(string)$row['title'];
+    if($title===''||mb_strlen($title)>190)throw new RuntimeException('Scene title is required.');
+    $order=array_key_exists('sort_order',$input)?max(0,(int)$input['sort_order']):(int)$row['sort_order'];
+    $weight=array_key_exists('weight',$input)?max(.1,min(1000,(float)$input['weight'])):(float)$row['weight'];
+    $enabled=array_key_exists('is_enabled',$input)?(!empty($input['is_enabled'])?1:0):(int)$row['is_enabled'];
+    $settings=array_key_exists('settings',$input)?dt_experience_json($input['settings']):($row['settings_json']??null);
+    $pdo->prepare('UPDATE experience_scenes_v280 SET title=?,sort_order=?,weight=?,is_enabled=?,settings_json=? WHERE id=?')->execute([$title,$order,$weight,$enabled,$settings,(int)$row['id']]);
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'scene.updated',['scene_key'=>$sceneKey]);
+    $stmt->execute([$versionId,$sceneKey]);return $stmt->fetch()?:[];
+}
+
+function dt_experience_scene_delete(PDO $pdo,int $versionId,array $user,string $sceneKey): void
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $sceneKey=dt_experience_key($sceneKey);
+    $nodes=$pdo->prepare('SELECT COUNT(*) FROM experience_flow_nodes_v280 WHERE version_id=? AND scene_key=?');
+    $nodes->execute([$versionId,$sceneKey]);
+    if((int)$nodes->fetchColumn()>0)throw new RuntimeException('Remove flow nodes that reference this scene before deleting it.');
+    $stmt=$pdo->prepare('DELETE FROM experience_scenes_v280 WHERE version_id=? AND scene_key=?');
+    $stmt->execute([$versionId,$sceneKey]);
+    if($stmt->rowCount()!==1)throw new RuntimeException('Scene was not found.');
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'scene.deleted',['scene_key'=>$sceneKey]);
+}
+
+function dt_experience_layer_update(PDO $pdo,int $versionId,array $user,string $sceneKey,string $layerKey,array $input): array
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $sceneKey=dt_experience_key($sceneKey);$layerKey=dt_experience_key($layerKey);
+    $stmt=$pdo->prepare('SELECT l.* FROM experience_layers_v280 l INNER JOIN experience_scenes_v280 s ON s.id=l.scene_id WHERE s.version_id=? AND s.scene_key=? AND l.layer_key=? LIMIT 1');
+    $stmt->execute([$versionId,$sceneKey,$layerKey]);$row=$stmt->fetch();
+    if(!$row)throw new RuntimeException('Layer was not found.');
+    $type=array_key_exists('layer_type',$input)?dt_experience_key((string)$input['layer_type']):(string)$row['layer_type'];
+    $order=array_key_exists('sort_order',$input)?(int)$input['sort_order']:(int)$row['sort_order'];
+    $settings=array_key_exists('settings',$input)?dt_experience_json($input['settings']):($row['settings_json']??null);
+    $pdo->prepare('UPDATE experience_layers_v280 SET layer_type=?,sort_order=?,settings_json=? WHERE id=?')->execute([$type,$order,$settings,(int)$row['id']]);
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'layer.updated',['scene_key'=>$sceneKey,'layer_key'=>$layerKey]);
+    $stmt->execute([$versionId,$sceneKey,$layerKey]);return $stmt->fetch()?:[];
+}
+
+function dt_experience_layer_delete(PDO $pdo,int $versionId,array $user,string $sceneKey,string $layerKey): void
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $sceneKey=dt_experience_key($sceneKey);$layerKey=dt_experience_key($layerKey);
+    $stmt=$pdo->prepare('DELETE l FROM experience_layers_v280 l INNER JOIN experience_scenes_v280 s ON s.id=l.scene_id WHERE s.version_id=? AND s.scene_key=? AND l.layer_key=?');
+    $stmt->execute([$versionId,$sceneKey,$layerKey]);
+    if($stmt->rowCount()!==1)throw new RuntimeException('Layer was not found.');
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'layer.deleted',['scene_key'=>$sceneKey,'layer_key'=>$layerKey]);
+}
+
+function dt_experience_node_update(PDO $pdo,int $versionId,array $user,string $nodeKey,array $input): array
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $nodeKey=dt_experience_key($nodeKey);
+    $stmt=$pdo->prepare('SELECT * FROM experience_flow_nodes_v280 WHERE version_id=? AND node_key=? LIMIT 1');
+    $stmt->execute([$versionId,$nodeKey]);$row=$stmt->fetch();
+    if(!$row)throw new RuntimeException('Flow node was not found.');
+    $type=array_key_exists('node_type',$input)?dt_experience_key((string)$input['node_type']):(string)$row['node_type'];
+    $sceneKey=array_key_exists('scene_key',$input)?trim((string)$input['scene_key']):($row['scene_key']??'');
+    if($sceneKey!==''){
+        $sceneKey=dt_experience_key($sceneKey);
+        $q=$pdo->prepare('SELECT 1 FROM experience_scenes_v280 WHERE version_id=? AND scene_key=? LIMIT 1');$q->execute([$versionId,$sceneKey]);
+        if(!$q->fetchColumn())throw new RuntimeException('Flow node scene was not found.');
+    }else $sceneKey=null;
+    $x=array_key_exists('x',$input)?(float)$input['x']:(float)$row['position_x'];
+    $y=array_key_exists('y',$input)?(float)$input['y']:(float)$row['position_y'];
+    $settings=array_key_exists('settings',$input)?dt_experience_json($input['settings']):($row['settings_json']??null);
+    $pdo->prepare('UPDATE experience_flow_nodes_v280 SET node_type=?,scene_key=?,position_x=?,position_y=?,settings_json=? WHERE id=?')->execute([$type,$sceneKey,$x,$y,$settings,(int)$row['id']]);
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'flow.node_updated',['node_key'=>$nodeKey]);
+    $stmt->execute([$versionId,$nodeKey]);return $stmt->fetch()?:[];
+}
+
+function dt_experience_node_delete(PDO $pdo,int $versionId,array $user,string $nodeKey): void
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $nodeKey=dt_experience_key($nodeKey);
+    $edges=$pdo->prepare('SELECT COUNT(*) FROM experience_flow_edges_v280 WHERE version_id=? AND (from_node_key=? OR to_node_key=?)');
+    $edges->execute([$versionId,$nodeKey,$nodeKey]);
+    if((int)$edges->fetchColumn()>0)throw new RuntimeException('Remove connected edges before deleting this flow node.');
+    $stmt=$pdo->prepare('DELETE FROM experience_flow_nodes_v280 WHERE version_id=? AND node_key=?');$stmt->execute([$versionId,$nodeKey]);
+    if($stmt->rowCount()!==1)throw new RuntimeException('Flow node was not found.');
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'flow.node_deleted',['node_key'=>$nodeKey]);
+}
+
+function dt_experience_edge_update(PDO $pdo,int $versionId,array $user,string $edgeKey,array $input): array
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $edgeKey=dt_experience_key($edgeKey);
+    $stmt=$pdo->prepare('SELECT * FROM experience_flow_edges_v280 WHERE version_id=? AND edge_key=? LIMIT 1');$stmt->execute([$versionId,$edgeKey]);$row=$stmt->fetch();
+    if(!$row)throw new RuntimeException('Flow edge was not found.');
+    $from=array_key_exists('from_node_key',$input)?dt_experience_key((string)$input['from_node_key']):(string)$row['from_node_key'];
+    $to=array_key_exists('to_node_key',$input)?dt_experience_key((string)$input['to_node_key']):(string)$row['to_node_key'];
+    if($from===$to)throw new RuntimeException('A flow edge cannot connect a node to itself.');
+    $q=$pdo->prepare('SELECT node_key FROM experience_flow_nodes_v280 WHERE version_id=? AND node_key IN (?,?)');$q->execute([$versionId,$from,$to]);
+    $found=array_fill_keys($q->fetchAll(PDO::FETCH_COLUMN)?:[],true);
+    if(!isset($found[$from],$found[$to]))throw new RuntimeException('Flow edge nodes must exist in the same version.');
+    $fromPort=array_key_exists('from_port',$input)?substr(trim((string)$input['from_port']),0,80):(string)$row['from_port'];
+    $toPort=array_key_exists('to_port',$input)?substr(trim((string)$input['to_port']),0,80):(string)$row['to_port'];
+    $condition=array_key_exists('condition',$input)?dt_experience_json($input['condition']):($row['condition_json']??null);
+    $pdo->prepare('UPDATE experience_flow_edges_v280 SET from_node_key=?,from_port=?,to_node_key=?,to_port=?,condition_json=? WHERE id=?')->execute([$from,$fromPort,$to,$toPort,$condition,(int)$row['id']]);
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'flow.edge_updated',['edge_key'=>$edgeKey]);
+    $stmt->execute([$versionId,$edgeKey]);return $stmt->fetch()?:[];
+}
+
+function dt_experience_edge_delete(PDO $pdo,int $versionId,array $user,string $edgeKey): void
+{
+    [$experience]=dt_experience_require_draft($pdo,$versionId,$user);
+    $edgeKey=dt_experience_key($edgeKey);
+    $stmt=$pdo->prepare('DELETE FROM experience_flow_edges_v280 WHERE version_id=? AND edge_key=?');$stmt->execute([$versionId,$edgeKey]);
+    if($stmt->rowCount()!==1)throw new RuntimeException('Flow edge was not found.');
+    dt_experience_event($pdo,(int)$experience['id'],$versionId,(int)$user['id'],'flow.edge_deleted',['edge_key'=>$edgeKey]);
+}
+
 function dt_experience_manifest(PDO $pdo,int $versionId): array
 {
     $version=dt_experience_version_row($pdo,$versionId);
